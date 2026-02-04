@@ -2,7 +2,7 @@
 import React, { useMemo, useState } from 'react';
 import { ModelSpecs, ChatSession, Language } from '../types';
 import { UI_STRINGS } from '../constants';
-import { Plus, MessageSquare, Trash2, Search, Zap } from 'lucide-react';
+import { Plus, MessageSquare, Trash2, Search, Zap, ShieldCheck, ShieldAlert } from 'lucide-react';
 
 interface SidebarProps {
   specs: ModelSpecs;
@@ -14,10 +14,11 @@ interface SidebarProps {
   language: Language;
   searchTerm: string;
   onSearch: (val: string) => void;
+  isInitialized?: boolean;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ 
-  specs, sessions, currentId, onSelect, onDelete, onNew, language, searchTerm, onSearch 
+  specs, sessions, currentId, onSelect, onDelete, onNew, language, searchTerm, onSearch, isInitialized 
 }) => {
   const t = UI_STRINGS[language];
 
@@ -69,13 +70,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <div className="w-10 h-10 bg-indigo-600/10 rounded-xl flex items-center justify-center text-indigo-500">
                 <Zap className="w-5 h-5" />
               </div>
-              <div>
-                 <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Powered by</p>
-                 <p className="text-xs font-black dark:text-zinc-100">{specs.name} Neural Engine</p>
+              <div className="flex-1">
+                 <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Model</p>
+                 <p className="text-xs font-black dark:text-zinc-100">{specs.name}-2 Synthesis</p>
               </div>
+              {isInitialized ? (
+                <ShieldCheck className="w-4 h-4 text-emerald-500" />
+              ) : (
+                <ShieldAlert className="w-4 h-4 text-amber-500 animate-pulse" />
+              )}
            </div>
            <p className="text-[10px] text-zinc-500 leading-relaxed font-medium">
-             Proprietary {specs.architecture} framework. Authored by Usama Systems.
+             Proprietary logic synthesis architecture. Developed by Usama Systems.
            </p>
         </div>
       </div>

@@ -7,7 +7,7 @@ export interface User {
   name: string;
   email: string;
   avatar?: string;
-  provider: 'email' | 'google' | 'apple' | 'x';
+  provider: 'email' | 'google' | 'apple' | 'x' | 'bypass';
 }
 
 export interface GroundingChunk {
@@ -33,6 +33,8 @@ export interface Message {
   timestamp: Date;
   groundingChunks?: GroundingChunk[];
   attachments?: Attachment[];
+  thoughtProcess?: string[]; 
+  isThinking?: boolean;
 }
 
 export interface ChatSession {
@@ -40,6 +42,13 @@ export interface ChatSession {
   title: string;
   messages: Message[];
   createdAt: Date;
+}
+
+export interface SystemLog {
+  id: string;
+  timestamp: Date;
+  message: string;
+  level: 'info' | 'warn' | 'error' | 'success';
 }
 
 export interface KoroState {
@@ -51,6 +60,8 @@ export interface KoroState {
   theme: Theme;
   language: Language;
   user?: User | null;
+  isInitialized: boolean;
+  systemLogs: SystemLog[];
 }
 
 export interface ModelSpecs {

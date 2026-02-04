@@ -5,12 +5,20 @@ import { ChatBox } from './components/ChatBox';
 import { Header } from './components/Header';
 import { UserInput } from './components/UserInput';
 import { Auth } from './components/Auth';
-import { Message, KoroState, ChatSession, Language, Theme, Attachment, User } from './types';
+import { ProfileModal } from './components/ProfileModal';
+import { InitDashboard } from './components/InitDashboard';
+import { Message, KoroState, ChatSession, Language, Attachment, User } from './types';
 import { KORO_SPECS, INITIAL_MESSAGE, UI_STRINGS } from './constants';
 import { generateKoroStream } from './services/koroEngine';
-import { Menu, X } from 'lucide-react';
+import { auth, onAuthStateChanged, isMock } from './services/firebase';
+import { AuthService } from './services/authService';
+import { Menu, Loader2, Settings, AlertCircle } from 'lucide-react';
 
 const App: React.FC = () => {
+  const [isInitializing, setIsInitializing] = useState(true);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isInitDashboardOpen, setIsInitDashboardOpen] = useState(false);
+
   const [state, setState] = useState<KoroState>(() => {
     const saved = localStorage.getItem('koro_v2_store');
     if (saved) {
@@ -19,12 +27,14 @@ const App: React.FC = () => {
         return {
           ...parsed,
           isProcessing: false,
+          isInitialized: parsed.isInitialized ?? false,
+          systemLogs: parsed.systemLogs || [],
           sessions: parsed.sessions.map((s: any) => ({
             ...s,
             createdAt: new Date(s.createdAt),
             messages: s.messages.map((m: any) => ({ ...m, timestamp: new Date(m.timestamp) }))
           })),
-          user: parsed.user || null
+          user: null 
         };
       } catch (e) { console.error("Restore failed", e); }
     }
@@ -48,9 +58,51 @@ const App: React.FC = () => {
       author: KORO_SPECS.author,
       theme: 'dark',
       language: 'en',
-      user: null
+      user: null,
+      isInitialized: false,
+      systemLogs: []
     };
   });
+
+  const isAutonomous = !process.env.API_KEY || process.env.API_KEY.includes("YOUR_");
+
+  useEffect(() => {
+    if (isMock) {
+      const localUser = (AuthService as any)._getMockUser();
+      if (localUser) {
+        const saved = localStorage.getItem('koro_v2_user_override');
+        if (saved) {
+          const override = JSON.parse(saved);
+          setState(prev => ({ ...prev, user: { ...localUser, ...override } }));
+        } else {
+          setState(prev => ({ ...prev, user: localUser }));
+        }
+      }
+      setIsInitializing(false);
+      return;
+    }
+
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        const saved = localStorage.getItem('koro_v2_user_override');
+        let override = null;
+        if (saved) override = JSON.parse(saved);
+
+        const user: User = {
+          id: firebaseUser.uid,
+          name: override?.name || firebaseUser.displayName || firebaseUser.email?.split('@')[0] || "Operator",
+          email: firebaseUser.email || "",
+          avatar: override?.avatar || firebaseUser.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${firebaseUser.email}`,
+          provider: 'email'
+        };
+        setState(prev => ({ ...prev, user }));
+      } else {
+        setState(prev => ({ ...prev, user: null }));
+      }
+      setIsInitializing(false);
+    });
+    return () => unsubscribe();
+  }, []);
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -112,16 +164,24 @@ const App: React.FC = () => {
 
     try {
       await generateKoroStream(
-        content || (attachments?.length ? "Analyze these attachments." : ""),
+        content || (attachments?.length ? "Analyze." : ""),
         [...currentSession.messages, userMsg],
         state.language,
-        (text, chunks) => {
+        (text, thoughts, chunks) => {
           setState(prev => ({
             ...prev,
             sessions: prev.sessions.map(s => {
               if (s.id === prev.currentSessionId) {
                 const existingIndex = s.messages.findIndex(m => m.id === assistantMsgId);
-                const assistantMsg: Message = { id: assistantMsgId, role: 'assistant', content: text, timestamp: new Date(), groundingChunks: chunks };
+                const assistantMsg: Message = { 
+                  id: assistantMsgId, 
+                  role: 'assistant', 
+                  content: text, 
+                  timestamp: new Date(), 
+                  groundingChunks: chunks,
+                  thoughtProcess: thoughts,
+                  isThinking: text === ""
+                };
                 if (existingIndex >= 0) {
                   const newMsgs = [...s.messages];
                   newMsgs[existingIndex] = assistantMsg;
@@ -139,13 +199,7 @@ const App: React.FC = () => {
       );
     } catch (e) {
       if (!(e instanceof Error && e.name === 'AbortError')) {
-        console.error(e);
-        const errorMsg: Message = { 
-          id: (Date.now() + 5).toString(), 
-          role: 'assistant', 
-          content: "Neural Pathway Obstruction. Synchronization failed.", 
-          timestamp: new Date() 
-        };
+        const errorMsg: Message = { id: (Date.now() + 5).toString(), role: 'assistant', content: "Neural Pathway Obstruction. Synchronization failed.", timestamp: new Date() };
         setState(prev => ({
           ...prev,
           sessions: prev.sessions.map(s => s.id === prev.currentSessionId ? { ...s, messages: [...s.messages, errorMsg] } : s)
@@ -182,9 +236,32 @@ const App: React.FC = () => {
     setState(prev => ({ ...prev, user }));
   };
 
-  const handleLogout = () => {
-    setState(prev => ({ ...prev, user: null }));
+  const handleLogout = async () => {
+    try {
+      await AuthService.logout();
+      localStorage.removeItem('koro_v2_user_override');
+      setState(prev => ({ ...prev, user: null }));
+    } catch (e) { console.error("Logout failed", e); }
   };
+
+  const handleUpdateUser = (updatedUser: User) => {
+    setState(prev => ({ ...prev, user: updatedUser }));
+    localStorage.setItem('koro_v2_user_override', JSON.stringify({ name: updatedUser.name, avatar: updatedUser.avatar }));
+  };
+
+  const handleInitComplete = () => {
+    setState(prev => ({ ...prev, isInitialized: true }));
+  };
+
+  if (isInitializing) {
+    return (
+      <div className="fixed inset-0 bg-[#050507] flex flex-col items-center justify-center">
+        <div className="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center text-white font-black text-2xl mb-4 animate-pulse">K</div>
+        <Loader2 className="w-6 h-6 text-indigo-500 animate-spin" />
+        <p className="mt-4 text-[10px] text-zinc-600 font-black uppercase tracking-[0.4em]">Initializing Neural Core...</p>
+      </div>
+    );
+  }
 
   if (!state.user) {
     return <Auth onLogin={handleLogin} />;
@@ -192,12 +269,6 @@ const App: React.FC = () => {
 
   return (
     <div className="flex h-screen w-full bg-slate-50 dark:bg-[#0b0b0d] text-slate-900 dark:text-zinc-100 overflow-hidden font-sans">
-      {isSidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-black/60 z-40 lg:hidden backdrop-blur-sm transition-opacity"
-          onClick={() => setIsSidebarOpen(false)}
-        />
-      )}
       <div className={`
         fixed lg:relative z-50 h-full w-[300px] transition-transform duration-300 transform
         ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
@@ -212,19 +283,24 @@ const App: React.FC = () => {
           language={state.language}
           searchTerm=""
           onSearch={() => {}}
+          isInitialized={state.isInitialized}
         />
+        <button 
+          onClick={() => setIsInitDashboardOpen(true)}
+          className="absolute bottom-6 right-6 lg:static lg:mt-4 mx-4 p-4 bg-zinc-900 border border-white/5 rounded-2xl text-zinc-400 hover:text-white transition-all flex items-center space-x-3 group"
+        >
+          <Settings className={`w-4 h-4 ${!state.isInitialized ? 'text-amber-500 animate-pulse' : ''}`} />
+          <span className="text-[10px] font-black uppercase tracking-widest">System Init</span>
+        </button>
       </div>
       <main className="flex flex-col flex-1 h-full min-w-0 bg-white dark:bg-[#0b0b0d] relative">
         <div className="flex items-center px-4 lg:px-8 border-b border-zinc-200 dark:border-zinc-800/50 h-16 shrink-0">
-          <button 
-            onClick={() => setIsSidebarOpen(true)}
-            className="lg:hidden p-2 -ml-2 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg"
-          >
+          <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden p-2 -ml-2 text-zinc-500 rounded-lg">
             <Menu className="w-6 h-6" />
           </button>
-          <div className="flex-1 flex justify-center lg:justify-start">
+          <div className="flex-1">
              <Header 
-                activeModel={state.activeModel} 
+                activeModel={isAutonomous ? "Koro-2 Synthesis" : state.activeModel} 
                 author={state.author} 
                 theme={state.theme}
                 onToggleTheme={() => setState(p => ({...p, theme: p.theme === 'dark' ? 'light' : 'dark'}))}
@@ -232,27 +308,42 @@ const App: React.FC = () => {
                 onSetLanguage={(l) => setState(p => ({...p, language: l}))}
                 user={state.user}
                 onLogout={handleLogout}
+                onOpenProfile={() => setIsProfileOpen(true)}
              />
           </div>
         </div>
         <div className="flex-1 overflow-y-auto relative scroll-smooth pt-4">
-           <div className="max-w-4xl mx-auto px-4 lg:px-6 w-full space-y-8 pb-10">
-              {currentSession.messages.length === 0 && (
-                <div className="flex flex-col items-center justify-center min-h-[50vh] text-center space-y-4 animate-in">
-                  <div className="w-16 h-16 bg-indigo-600/10 rounded-2xl flex items-center justify-center text-indigo-500 mb-4">
-                    <span className="text-3xl font-black">K</span>
-                  </div>
-                  <h2 className="text-2xl font-bold tracking-tight">Multimodal Engine Active</h2>
-                  <p className="text-zinc-500 max-w-sm">Welcome back, {state.user.name}. I can now analyze images, videos, and documents. Upload items to begin.</p>
+           {isAutonomous && (
+             <div className="absolute top-4 right-4 z-10 px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded-full flex items-center space-x-2 animate-in fade-in zoom-in duration-500">
+               <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse" />
+               <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest">Synthesis Mode Active</span>
+             </div>
+           )}
+           {!state.isInitialized && (
+             <div className="m-8 p-6 bg-amber-500/10 border border-amber-500/20 rounded-3xl flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                   <AlertCircle className="w-6 h-6 text-amber-500" />
+                   <div>
+                      <p className="text-sm font-bold text-amber-500 uppercase tracking-tight">System Uninitialized</p>
+                      <p className="text-xs text-amber-500/70">Project configuration required for peak autonomous performance.</p>
+                   </div>
                 </div>
-              )}
-              {currentSession.messages.map((msg, i) => (
+                <button 
+                  onClick={() => setIsInitDashboardOpen(true)}
+                  className="px-4 py-2 bg-amber-500 text-black font-black text-[10px] uppercase tracking-widest rounded-xl hover:scale-105 transition-transform"
+                >
+                  Init Project
+                </button>
+             </div>
+           )}
+           <div className="max-w-4xl mx-auto px-4 lg:px-6 w-full space-y-8 pb-10">
+              {currentSession.messages.map((msg) => (
                 <ChatBox key={msg.id} message={msg} theme={state.theme} />
               ))}
               {state.isProcessing && (
                 <div className="flex items-center space-x-3 text-indigo-500 px-4 animate-pulse">
                   <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
-                  <span className="text-xs font-bold uppercase tracking-widest">{t.thinking}</span>
+                  <span className="text-xs font-bold uppercase tracking-widest">Synthesizing Neural Logic...</span>
                 </div>
               )}
               <div ref={chatEndRef} className="h-4" />
@@ -260,21 +351,27 @@ const App: React.FC = () => {
         </div>
         <div className="shrink-0 border-t border-zinc-200 dark:border-zinc-800/50 p-4 lg:p-8 bg-white/80 dark:bg-[#0b0b0d]/80 backdrop-blur-md">
           <div className="max-w-4xl mx-auto">
-             <UserInput 
-                onSend={handleSendMessage} 
-                onStop={handleStopGeneration}
-                disabled={state.isProcessing} 
-                placeholder={t.inputPlaceholder} 
-                language={state.language} 
-             />
+             <UserInput onSend={handleSendMessage} onStop={handleStopGeneration} disabled={state.isProcessing} placeholder={t.inputPlaceholder} language={state.language} />
              <div className="mt-4 text-center">
                 <p className="text-[10px] text-zinc-500 dark:text-zinc-600 font-medium uppercase tracking-[0.2em]">
-                  {state.activeModel} • Platinum Series • {state.author} Systems
+                  {isAutonomous ? "Koro-2 Autonomous Model • Zero-API Bypass • Developed by Usama" : `${state.activeModel} • Platinum Series • ${state.author} Systems`}
                 </p>
              </div>
           </div>
         </div>
       </main>
+
+      {isProfileOpen && state.user && (
+        <ProfileModal user={state.user} onClose={() => setIsProfileOpen(false)} onSave={handleUpdateUser} />
+      )}
+
+      {isInitDashboardOpen && (
+        <InitDashboard 
+          isInitialized={state.isInitialized} 
+          onInitComplete={handleInitComplete} 
+          onClose={() => setIsInitDashboardOpen(false)} 
+        />
+      )}
     </div>
   );
 };

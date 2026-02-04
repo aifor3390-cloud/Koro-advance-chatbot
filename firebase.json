@@ -1,0 +1,17 @@
+{
+  "hosting": {
+    "site": "flutter-ai-playground-d5bd6-6767d",
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}

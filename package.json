@@ -16,7 +16,8 @@
     "remark-gfm": "^4.0.0",
     "lucide-react": "^0.454.0",
     "clsx": "^2.1.1",
-    "tailwind-merge": "^2.5.4"
+    "tailwind-merge": "^2.5.4",
+    "axios": "^1.7.9"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

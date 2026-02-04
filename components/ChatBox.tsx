@@ -1,9 +1,9 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Message, Theme, Attachment } from '../types';
-import { FileText, Download, ExternalLink, PlayCircle, Maximize2 } from 'lucide-react';
+import { FileText, Download, ExternalLink, Maximize2, ChevronDown, ChevronUp, Cpu } from 'lucide-react';
 
 interface ChatBoxProps {
   message: Message;
@@ -61,12 +61,6 @@ const AttachmentPreview: React.FC<{ attachment: Attachment }> = ({ attachment })
           <p className="text-sm font-bold truncate dark:text-zinc-100">{attachment.name || "Document"}</p>
           <div className="flex items-center space-x-2">
             <p className="text-[10px] text-zinc-400 font-black uppercase tracking-widest">{attachment.mimeType.split('/')[1]}</p>
-            {attachment.size && (
-              <>
-                <div className="w-1 h-1 bg-zinc-600 rounded-full" />
-                <p className="text-[10px] text-zinc-400 font-bold">{(attachment.size / 1024).toFixed(1)} KB</p>
-              </>
-            )}
           </div>
         </div>
       </div>
@@ -74,67 +68,77 @@ const AttachmentPreview: React.FC<{ attachment: Attachment }> = ({ attachment })
         <button 
           onClick={() => window.open(dataUrl, '_blank')}
           className="p-3 text-zinc-400 hover:text-indigo-500 hover:bg-indigo-500/10 rounded-xl transition-all"
-          title="Open file"
         >
-          <ExternalLink className="w-4.5 h-4.5" />
+          <ExternalLink className="w-4 h-4" />
         </button>
-        <a 
-          href={dataUrl} 
-          download={attachment.name || 'document'} 
-          className="p-3 text-zinc-400 hover:text-indigo-500 hover:bg-indigo-500/10 rounded-xl transition-all"
-          title="Download file"
-        >
-          <Download className="w-4.5 h-4.5" />
-        </a>
       </div>
     </div>
   );
 };
 
-export const ChatBox: React.FC<ChatBoxProps> = ({ message, theme, isNew }) => {
+export const ChatBox: React.FC<ChatBoxProps> = ({ message, theme }) => {
+  const [showThoughts, setShowThoughts] = useState(true);
   const isAssistant = message.role === 'assistant';
 
   return (
     <div className={`
       flex flex-col ${isAssistant ? 'items-start' : 'items-end'} 
-      group perspective-2000 transform-3d w-full
-      animate-in fade-in slide-in-from-bottom-2 duration-500
+      group w-full animate-in fade-in slide-in-from-bottom-2 duration-500
     `}>
       <div className="flex items-center space-x-3 mb-3 px-4">
         {isAssistant && (
-          <div className="relative transform-3d">
-            <div className="absolute inset-0 bg-indigo-500 blur-md opacity-40 rounded-xl"></div>
-            <div className="w-8 h-8 bg-indigo-600 rounded-xl flex items-center justify-center text-xs font-black text-white relative z-10 border border-white/20 shadow-lg">
-              K
-            </div>
+          <div className="w-8 h-8 bg-indigo-600 rounded-xl flex items-center justify-center text-xs font-black text-white border border-white/20 shadow-lg">
+            K
           </div>
         )}
         <span className="text-[10px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-[0.3em]">
-          {isAssistant ? 'Koro Engine' : 'User Terminal'}
+          {isAssistant ? 'Koro Platinum' : 'Neural Operator'}
         </span>
         {!isAssistant && (
           <div className="w-8 h-8 bg-zinc-200 dark:bg-zinc-800 rounded-xl flex items-center justify-center text-xs font-black text-zinc-500 dark:text-zinc-400 border border-zinc-300 dark:border-zinc-700">
-            U
+            O
           </div>
         )}
       </div>
       
       <div className={`
         relative max-w-[95%] md:max-w-[85%] rounded-[2rem] px-8 py-6 text-lg leading-relaxed 
-        transition-all duration-700 transform chat-bubble-3d border transform-3d
+        transition-all border
         ${isAssistant 
           ? 'bg-white dark:bg-zinc-900 text-slate-700 dark:text-zinc-100 border-zinc-200 dark:border-zinc-800 rounded-tl-none shadow-2xl dark:shadow-none' 
           : 'bg-indigo-600 text-white border-indigo-500 rounded-tr-none shadow-2xl shadow-indigo-600/20'
         }
       `}>
-        {isAssistant && <div className="absolute top-0 left-0 w-24 h-24 bg-indigo-500/5 blur-3xl rounded-full -ml-8 -mt-8"></div>}
-        
+        {isAssistant && message.thoughtProcess && message.thoughtProcess.length > 0 && (
+          <div className="mb-6">
+            <button 
+              onClick={() => setShowThoughts(!showThoughts)}
+              className="flex items-center space-x-2 p-3 bg-zinc-100 dark:bg-zinc-800/50 rounded-2xl border border-zinc-200 dark:border-zinc-700/50 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors w-full group/thought"
+            >
+              <Cpu className="w-4 h-4 text-indigo-500" />
+              <span className="flex-1 text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400 text-left">
+                Neural Reasoning Synthesis
+              </span>
+              {showThoughts ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </button>
+            {showThoughts && (
+              <div className="mt-3 space-y-2 pl-4 border-l-2 border-indigo-500/30 animate-in fade-in slide-in-from-top-2">
+                {message.thoughtProcess.map((thought, idx) => (
+                  <p key={idx} className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 italic">
+                    <span className="text-indigo-500 mr-2">●</span> {thought}
+                  </p>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="relative z-10 break-words markdown-content">
           {message.attachments?.map(att => (
             <AttachmentPreview key={att.id} attachment={att} />
           ))}
 
-          {message.content === "" && isAssistant ? (
+          {message.content === "" && isAssistant && !message.thoughtProcess ? (
             <div className="flex space-x-1 py-2">
               <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
               <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
@@ -147,24 +151,11 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ message, theme, isNew }) => {
                 pre: ({node, ...props}) => (
                   <div className="relative group/code my-4">
                     <pre className="bg-zinc-100 dark:bg-zinc-800 p-6 rounded-2xl overflow-x-auto border border-zinc-200 dark:border-zinc-700 font-mono text-sm leading-6" {...props} />
-                    <button 
-                      onClick={() => {
-                        const codeText = (node?.children[0] as any)?.children[0]?.value || "";
-                        navigator.clipboard.writeText(codeText);
-                      }}
-                      className="absolute top-4 right-4 p-2 bg-indigo-500/10 hover:bg-indigo-500 text-indigo-500 hover:text-white rounded-lg transition-all opacity-0 group-hover/code:opacity-100 shadow-sm"
-                    >
-                      <Download className="w-4 h-4" />
-                    </button>
                   </div>
                 ),
                 p: ({children}) => <p className="mb-4 last:mb-0 leading-8">{children}</p>,
                 ul: ({children}) => <ul className="list-disc ml-6 mb-4 space-y-2">{children}</ul>,
-                ol: ({children}) => <ol className="list-decimal ml-6 mb-4 space-y-2">{children}</ol>,
-                li: ({children}) => <li className="leading-7">{children}</li>,
                 h1: ({children}) => <h1 className="text-2xl font-black mb-4 tracking-tight text-indigo-600 dark:text-indigo-400">{children}</h1>,
-                h2: ({children}) => <h2 className="text-xl font-black mb-3 tracking-tight text-indigo-500 dark:text-indigo-300">{children}</h2>,
-                blockquote: ({children}) => <blockquote className="border-l-4 border-indigo-500 pl-4 py-2 italic bg-indigo-500/5 rounded-r-lg mb-4">{children}</blockquote>
               }}
             >
               {message.content}
@@ -183,10 +174,10 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ message, theme, isNew }) => {
                     rel="noopener noreferrer"
                     className="flex items-center space-x-2 bg-zinc-100 dark:bg-zinc-800/50 hover:bg-indigo-500/10 border border-zinc-200 dark:border-zinc-700/60 rounded-xl px-3 py-1.5 transition-all group/link"
                   >
-                    <span className="text-[10px] font-bold text-zinc-600 dark:text-zinc-400 truncate max-w-[150px] group-hover/link:text-indigo-500">
+                    <span className="text-[10px] font-bold text-zinc-600 dark:text-zinc-400 truncate max-w-[150px]">
                       {chunk.web.title || chunk.web.uri}
                     </span>
-                    <ExternalLink className="w-2.5 h-2.5 text-zinc-400 group-hover/link:text-indigo-500" />
+                    <ExternalLink className="w-2.5 h-2.5" />
                   </a>
                 ))}
               </div>
@@ -201,12 +192,10 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ message, theme, isNew }) => {
         </span>
         <div className="w-1 h-1 bg-zinc-700 rounded-full"></div>
         <button 
-          className="text-[10px] text-indigo-500 font-black uppercase tracking-widest hover:text-indigo-400 transition-colors" 
-          onClick={() => {
-            navigator.clipboard.writeText(message.content);
-          }}
+          className="text-[10px] text-indigo-500 font-black uppercase tracking-widest" 
+          onClick={() => navigator.clipboard.writeText(message.content)}
         >
-          Copy Synchronization
+          Copy
         </button>
       </div>
     </div>

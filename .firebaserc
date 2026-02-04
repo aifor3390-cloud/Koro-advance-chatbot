@@ -1,0 +1,14 @@
+{
+  "projects": {
+    "default": "flutter-ai-playground-d5bd6"
+  },
+  "targets": {
+    "flutter-ai-playground-d5bd6": {
+      "hosting": {
+        "flutter-ai-playground-d5bd6-6767d": [
+          "flutter-ai-playground-d5bd6-6767d"
+        ]
+      }
+    }
+  }
+}

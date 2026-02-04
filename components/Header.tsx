@@ -12,10 +12,11 @@ interface HeaderProps {
   onSetLanguage: (lang: Language) => void;
   user?: User | null;
   onLogout?: () => void;
+  onOpenProfile?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({ 
-  activeModel, author, theme, onToggleTheme, language, onSetLanguage, user, onLogout 
+  activeModel, author, theme, onToggleTheme, language, onSetLanguage, user, onLogout, onOpenProfile 
 }) => {
   const [showMenu, setShowMenu] = useState(false);
 
@@ -60,9 +61,9 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={() => setShowMenu(!showMenu)}
               className="flex items-center space-x-2 p-1 pl-2 bg-zinc-100 dark:bg-zinc-800/50 rounded-xl hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors border border-transparent hover:border-white/5"
             >
-              <div className="w-7 h-7 bg-indigo-600/20 rounded-lg flex items-center justify-center text-indigo-500 text-[10px] font-black uppercase">
+              <div className="w-7 h-7 bg-indigo-600/20 rounded-lg flex items-center justify-center text-indigo-500 text-[10px] font-black uppercase overflow-hidden">
                 {user.avatar ? (
-                  <img src={user.avatar} alt="" className="w-full h-full rounded-lg" />
+                  <img src={user.avatar} alt="" className="w-full h-full object-cover" />
                 ) : (
                   user.name.charAt(0)
                 )}
@@ -78,7 +79,10 @@ export const Header: React.FC<HeaderProps> = ({
                     <p className="text-[10px] text-zinc-500 truncate">{user.email}</p>
                   </div>
                   <div className="p-2">
-                    <button className="w-full flex items-center space-x-3 p-2.5 text-xs font-bold text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-xl transition-colors">
+                    <button 
+                      onClick={() => { onOpenProfile?.(); setShowMenu(false); }}
+                      className="w-full flex items-center space-x-3 p-2.5 text-xs font-bold text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-xl transition-colors"
+                    >
                       <UserIcon className="w-4 h-4" />
                       <span>Neural Profile</span>
                     </button>
