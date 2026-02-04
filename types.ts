@@ -2,11 +2,37 @@
 export type Theme = 'light' | 'dark';
 export type Language = 'en' | 'es' | 'fr' | 'ur' | 'ar';
 
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  avatar?: string;
+  provider: 'email' | 'google' | 'apple' | 'x';
+}
+
+export interface GroundingChunk {
+  web?: {
+    uri: string;
+    title: string;
+  };
+}
+
+export interface Attachment {
+  id: string;
+  type: 'image' | 'video' | 'document';
+  data: string; // base64
+  mimeType: string;
+  name?: string;
+  size?: number;
+}
+
 export interface Message {
   id: string;
   role: 'user' | 'assistant' | 'system';
   content: string;
   timestamp: Date;
+  groundingChunks?: GroundingChunk[];
+  attachments?: Attachment[];
 }
 
 export interface ChatSession {
@@ -24,6 +50,7 @@ export interface KoroState {
   author: string;
   theme: Theme;
   language: Language;
+  user?: User | null;
 }
 
 export interface ModelSpecs {

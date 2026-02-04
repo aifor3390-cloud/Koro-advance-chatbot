@@ -1,6 +1,7 @@
 
-import React from 'react';
-import { Theme, Language } from '../types';
+import React, { useState } from 'react';
+import { Theme, Language, User } from '../types';
+import { Sun, Moon, LogOut, Settings, User as UserIcon } from 'lucide-react';
 
 interface HeaderProps {
   activeModel: string;
@@ -9,47 +10,37 @@ interface HeaderProps {
   onToggleTheme: () => void;
   language: Language;
   onSetLanguage: (lang: Language) => void;
+  user?: User | null;
+  onLogout?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ activeModel, author, theme, onToggleTheme, language, onSetLanguage }) => {
+export const Header: React.FC<HeaderProps> = ({ 
+  activeModel, author, theme, onToggleTheme, language, onSetLanguage, user, onLogout 
+}) => {
+  const [showMenu, setShowMenu] = useState(false);
+
   return (
-    <header className="sticky top-0 z-30 flex items-center justify-between px-12 py-8 glass-light dark:glass border-b border-zinc-200 dark:border-zinc-900 bg-white/50 dark:bg-[#050507]/60">
-      <div className="flex items-center space-x-6">
-        <div className="relative group cursor-help">
-          <div className="absolute inset-0 bg-indigo-500 rounded-2xl blur-xl opacity-20 group-hover:opacity-60 transition-opacity animate-pulse"></div>
-          <div className="relative w-14 h-14 bg-gradient-to-br from-indigo-600 to-indigo-800 rounded-2xl flex items-center justify-center font-black text-2xl text-white shadow-2xl shadow-indigo-600/40 border border-white/20 transform-3d group-hover:rotate-12 transition-transform duration-500">
-            K
-          </div>
-        </div>
-        <div className="flex flex-col">
-          <div className="flex items-center space-x-3">
-            <h1 className="text-2xl font-black tracking-tighter dark:text-white uppercase">
-              {activeModel}
-            </h1>
-            <div className="flex space-x-1">
-               <div className="w-1 h-1 bg-indigo-500 rounded-full"></div>
-               <div className="w-1 h-1 bg-purple-500 rounded-full"></div>
-               <div className="w-1 h-1 bg-indigo-500 rounded-full"></div>
-            </div>
-          </div>
-          <div className="flex items-center space-x-2">
-            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-ping"></div>
-            <p className="text-[10px] text-emerald-500 dark:text-emerald-400 uppercase tracking-[0.4em] font-black">Link Active</p>
-          </div>
+    <div className="flex items-center justify-between w-full h-full">
+      <div className="flex items-center space-x-4">
+        <div className="hidden lg:flex w-8 h-8 bg-indigo-600 rounded-lg items-center justify-center text-white font-black text-sm">K</div>
+        <div>
+           <h1 className="text-sm font-bold tracking-tight uppercase dark:text-zinc-100">{activeModel}</h1>
+           <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-medium">Neural Status: Online</p>
         </div>
       </div>
       
-      <div className="flex items-center space-x-6">
-        <div className="hidden md:flex items-center space-x-2 bg-zinc-100 dark:bg-zinc-900 p-1 rounded-2xl border border-zinc-200 dark:border-zinc-800">
+      <div className="flex items-center space-x-2">
+        <div className="hidden sm:flex items-center bg-zinc-100 dark:bg-zinc-800/50 p-1 rounded-xl mr-2">
           {(['en', 'ur', 'ar'] as Language[]).map(lang => (
             <button
               key={lang}
               onClick={() => onSetLanguage(lang)}
-              className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                language === lang 
-                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' 
-                  : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
-              }`}
+              className={`
+                px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all
+                ${language === lang 
+                  ? 'bg-white dark:bg-zinc-700 text-indigo-600 dark:text-zinc-100 shadow-sm' 
+                  : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-400'}
+              `}
             >
               {lang}
             </button>
@@ -58,15 +49,57 @@ export const Header: React.FC<HeaderProps> = ({ activeModel, author, theme, onTo
 
         <button 
           onClick={onToggleTheme}
-          className="p-4 rounded-[1.2rem] bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 hover:text-indigo-500 dark:hover:text-indigo-400 shadow-xl shadow-indigo-500/5 transition-all transform active:scale-90"
+          className="p-2.5 rounded-xl bg-zinc-100 dark:bg-zinc-800/50 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
         >
-          {theme === 'dark' ? (
-            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
-          ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
-          )}
+          {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
         </button>
+
+        {user && (
+          <div className="relative">
+            <button 
+              onClick={() => setShowMenu(!showMenu)}
+              className="flex items-center space-x-2 p-1 pl-2 bg-zinc-100 dark:bg-zinc-800/50 rounded-xl hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors border border-transparent hover:border-white/5"
+            >
+              <div className="w-7 h-7 bg-indigo-600/20 rounded-lg flex items-center justify-center text-indigo-500 text-[10px] font-black uppercase">
+                {user.avatar ? (
+                  <img src={user.avatar} alt="" className="w-full h-full rounded-lg" />
+                ) : (
+                  user.name.charAt(0)
+                )}
+              </div>
+            </button>
+
+            {showMenu && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
+                <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl z-20 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="p-4 border-b border-zinc-100 dark:border-zinc-800">
+                    <p className="text-xs font-black dark:text-zinc-100 truncate">{user.name}</p>
+                    <p className="text-[10px] text-zinc-500 truncate">{user.email}</p>
+                  </div>
+                  <div className="p-2">
+                    <button className="w-full flex items-center space-x-3 p-2.5 text-xs font-bold text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-xl transition-colors">
+                      <UserIcon className="w-4 h-4" />
+                      <span>Neural Profile</span>
+                    </button>
+                    <button className="w-full flex items-center space-x-3 p-2.5 text-xs font-bold text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-xl transition-colors">
+                      <Settings className="w-4 h-4" />
+                      <span>Sync Settings</span>
+                    </button>
+                    <button 
+                      onClick={onLogout}
+                      className="w-full flex items-center space-x-3 p-2.5 text-xs font-bold text-red-500 hover:bg-red-500/5 rounded-xl transition-colors"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      <span>Terminate Link</span>
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </div>
-    </header>
+    </div>
   );
 };
