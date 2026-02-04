@@ -1,6 +1,6 @@
 {
-  "name": "Koro AI - Advanced Neural Model",
-  "description": "Koro is an advanced large language model developed by Usama, featuring proprietary neural architecture for high-performance reasoning and creative synthesis.",
+  "name": "Koro AI - Platinum Neural Core",
+  "description": "Koro is an advanced autonomous language model by Usama, featuring real-time search grounding and high-speed reasoning synthesis.",
   "requestFramePermissions": [
     "camera",
     "microphone"

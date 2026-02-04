@@ -2,12 +2,13 @@
 export type Theme = 'light' | 'dark';
 export type Language = 'en' | 'es' | 'fr' | 'ur' | 'ar';
 
+// Define the User interface required by auth and profile services
 export interface User {
   id: string;
   name: string;
   email: string;
-  avatar?: string;
-  provider: 'email' | 'google' | 'apple' | 'x' | 'bypass';
+  avatar: string;
+  provider: string;
 }
 
 export interface GroundingChunk {
@@ -44,13 +45,6 @@ export interface ChatSession {
   createdAt: Date;
 }
 
-export interface SystemLog {
-  id: string;
-  timestamp: Date;
-  message: string;
-  level: 'info' | 'warn' | 'error' | 'success';
-}
-
 export interface KoroState {
   isProcessing: boolean;
   sessions: ChatSession[];
@@ -59,9 +53,6 @@ export interface KoroState {
   author: string;
   theme: Theme;
   language: Language;
-  user?: User | null;
-  isInitialized: boolean;
-  systemLogs: SystemLog[];
 }
 
 export interface ModelSpecs {
