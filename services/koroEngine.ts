@@ -1,14 +1,15 @@
 
-import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 import { Message, Language } from "../types";
 import { KORO_SPECS } from "../constants";
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
 
-export const generateKoroResponse = async (
+export const generateKoroStream = async (
   prompt: string,
   history: Message[],
-  language: Language = 'en'
+  language: Language = 'en',
+  onChunk: (text: string) => void
 ): Promise<string> => {
   try {
     const formattedHistory = history.map(msg => ({
@@ -16,7 +17,7 @@ export const generateKoroResponse = async (
       parts: [{ text: msg.content }]
     }));
 
-    const response: GenerateContentResponse = await ai.models.generateContent({
+    const responseStream = await ai.models.generateContentStream({
       model: 'gemini-3-flash-preview',
       contents: [
         ...formattedHistory.map(h => ({ role: h.role as any, parts: h.parts })),
@@ -41,9 +42,18 @@ export const generateKoroResponse = async (
       }
     });
 
-    return response.text || "Neural connection timeout. Re-synchronizing...";
+    let fullText = "";
+    for await (const chunk of responseStream) {
+      const text = chunk.text;
+      if (text) {
+        fullText += text;
+        onChunk(fullText);
+      }
+    }
+
+    return fullText || "Neural connection timeout. Re-synchronizing...";
   } catch (error) {
     console.error("Koro Error:", error);
-    return "Critical Failure in Neural Pathways. Please verify the developer's API configuration.";
+    throw error;
   }
 };

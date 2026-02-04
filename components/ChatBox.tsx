@@ -5,13 +5,18 @@ import { Message, Theme } from '../types';
 interface ChatBoxProps {
   message: Message;
   theme: Theme;
+  isNew?: boolean;
 }
 
-export const ChatBox: React.FC<ChatBoxProps> = ({ message, theme }) => {
+export const ChatBox: React.FC<ChatBoxProps> = ({ message, theme, isNew }) => {
   const isAssistant = message.role === 'assistant';
 
   return (
-    <div className={`flex flex-col ${isAssistant ? 'items-start' : 'items-end'} group perspective-2000 transform-3d w-full`}>
+    <div className={`
+      flex flex-col ${isAssistant ? 'items-start' : 'items-end'} 
+      group perspective-2000 transform-3d w-full
+      animate-in fade-in slide-in-from-bottom-2 duration-500
+    `}>
       <div className="flex items-center space-x-3 mb-3 px-4">
         {isAssistant && (
           <div className="relative transform-3d">
@@ -42,12 +47,19 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ message, theme }) => {
         {/* Subtle Inner Glow for Assistant */}
         {isAssistant && <div className="absolute top-0 left-0 w-24 h-24 bg-indigo-500/5 blur-3xl rounded-full -ml-8 -mt-8"></div>}
         
-        <div className="relative z-10">
+        <div className="relative z-10 break-words">
           {message.content.split('\n').map((line, i) => (
             <p key={i} className={line.trim() === '' ? 'h-4' : 'mb-3 last:mb-0'}>
               {line}
             </p>
           ))}
+          {isAssistant && message.content === "" && (
+            <div className="flex space-x-1 py-2">
+              <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+              <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+              <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce"></div>
+            </div>
+          )}
         </div>
       </div>
       
@@ -56,7 +68,17 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ message, theme }) => {
           {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </span>
         <div className="w-1 h-1 bg-zinc-700 rounded-full"></div>
-        <button className="text-[10px] text-indigo-500 font-black uppercase tracking-widest hover:text-indigo-400 transition-colors" onClick={() => navigator.clipboard.writeText(message.content)}>Copy</button>
+        <button 
+          className="text-[10px] text-indigo-500 font-black uppercase tracking-widest hover:text-indigo-400 transition-colors" 
+          onClick={() => {
+            navigator.clipboard.writeText(message.content);
+            const btn = document.activeElement as HTMLElement;
+            if (btn) btn.innerText = "Copied!";
+            setTimeout(() => { if (btn) btn.innerText = "Copy"; }, 2000);
+          }}
+        >
+          Copy
+        </button>
       </div>
     </div>
   );
