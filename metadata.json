@@ -1,0 +1,8 @@
+{
+  "name": "Koro AI - Advanced Neural Model",
+  "description": "Koro is an advanced large language model developed by Usama, featuring proprietary neural architecture for high-performance reasoning and creative synthesis.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
