@@ -1,8 +1,9 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ModelSpecs, ChatSession, Language } from '../types';
 import { UI_STRINGS } from '../constants';
-import { Plus, MessageSquare, Trash2, Zap } from 'lucide-react';
+import { Plus, MessageSquare, Trash2, Zap, Brain, X, Info } from 'lucide-react';
+import { MemoryService, Synapse } from '../services/memoryService';
 
 interface SidebarProps {
   specs: ModelSpecs;
@@ -12,16 +13,23 @@ interface SidebarProps {
   onDelete: (id: string) => void;
   onNew: () => void;
   language: Language;
-  isInitialized?: boolean;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ 
   specs, sessions, currentId, onSelect, onDelete, onNew, language 
 }) => {
   const t = UI_STRINGS[language];
+  const [synapses, setSynapses] = useState<Synapse[]>([]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setSynapses(MemoryService.getSynapses());
+    }, 2000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
-    <aside className="flex flex-col h-full w-full bg-[#f8f9fa] dark:bg-[#08080a] border-r border-zinc-200 dark:border-zinc-900 p-4">
+    <aside className="flex flex-col h-full w-full bg-[#f8f9fa] dark:bg-[#08080a] border-r border-zinc-200 dark:border-zinc-900 p-4 transition-colors duration-300">
       
       {/* New Chat Button */}
       <button 
@@ -34,8 +42,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* History List */}
       <div className="flex-1 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
-        <h2 className="text-[10px] font-black text-zinc-400 dark:text-zinc-600 uppercase tracking-[0.3em] mb-4 px-2">Archives</h2>
-        
+        <h2 className="text-[10px] font-black text-zinc-400 dark:text-zinc-600 uppercase tracking-[0.3em] mb-4 px-2">Conversations</h2>
         {sessions.map(s => (
           <div 
             key={s.id}
@@ -59,6 +66,34 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </button>
           </div>
         ))}
+
+        {/* Neural Brain Section */}
+        <div className="mt-8">
+          <div className="flex items-center space-x-2 px-2 mb-4">
+            <Brain className="w-3 h-3 text-indigo-500 animate-pulse" />
+            <h2 className="text-[10px] font-black text-zinc-400 dark:text-zinc-600 uppercase tracking-[0.3em]">Neural Synapses</h2>
+          </div>
+          <div className="space-y-2">
+            {synapses.length === 0 ? (
+              <div className="px-2 py-3 bg-zinc-100 dark:bg-zinc-900/30 rounded-xl border border-dashed border-zinc-200 dark:border-zinc-800 flex items-center space-x-2">
+                <Info className="w-3 h-3 text-zinc-400" />
+                <span className="text-[10px] text-zinc-500 font-medium">Awaiting facts to store...</span>
+              </div>
+            ) : (
+              synapses.map(s => (
+                <div key={s.id} className="group flex items-center justify-between p-2.5 bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-xl transition-all hover:border-indigo-500/30">
+                  <span className="text-[10px] font-medium text-zinc-600 dark:text-zinc-300 truncate pr-2">{s.fact}</span>
+                  <button 
+                    onClick={() => MemoryService.deleteSynapse(s.id)}
+                    className="opacity-0 group-hover:opacity-100 p-1 text-zinc-400 hover:text-red-500 transition-all"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Footer / Specs */}
@@ -69,12 +104,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <Zap className="w-5 h-5" />
               </div>
               <div className="flex-1">
-                 <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Model</p>
-                 <p className="text-xs font-black dark:text-zinc-100">{specs.name}-2 Synthesis</p>
+                 <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Core</p>
+                 <p className="text-xs font-black dark:text-zinc-100">{specs.name}-2 Omni</p>
               </div>
            </div>
            <p className="text-[10px] text-zinc-500 leading-relaxed font-medium">
-             Proprietary logic synthesis architecture. Developed by Usama Systems.
+             Handcrafted by Usama Systems. Multimodal Brain Active.
            </p>
         </div>
       </div>

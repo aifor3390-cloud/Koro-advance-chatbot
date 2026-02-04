@@ -3,79 +3,80 @@ import { ModelSpecs, Language } from './types';
 
 export const KORO_SPECS: ModelSpecs = {
   name: "Koro",
-  version: "2.6.0-Flash-Lite",
-  parameters: "1.8T Flash Pathways",
-  architecture: "Low-Latency Multimodal Transformer",
+  version: "2.7.0-Omni",
+  parameters: "2.1T Omni Pathways",
+  architecture: "Persistent Memory Transformer + Workshop",
   author: "Usama"
 };
 
 export const INITIAL_MESSAGE = {
-  en: "Koro Flash-Lite Online. Ultra-low latency pathways active. Developed by Usama. How can I assist your objectives at speed?",
-  es: "Koro Flash-Lite en línea. Vías de latencia ultra baja activas. Desarrollado por Usama. ¿Cómo puedo asistir sus objetivos con rapidez?",
-  fr: "Koro Flash-Lite en ligne. Voies à ultra-faible latence activées. Développé par Usama. Comment puis-je vous aider rapidement?",
-  ur: "کورو فلیش لائٹ آن لائن۔ انتہائی کم تاخیر والے راستے فعال۔ اسامہ کا تیار کردہ۔ میں تیزی سے آپ کے مقاصد میں کیسے مدد کر سکتا ہوں؟",
-  ar: "كورو فلاش لايت متصل. مسارات زمن الوصول المنخفض للغاية نشطة. تم تطويره بواسطة أسامة. كيف يمكنني مساعدتك في أهدافك بسرعة؟"
+  en: "Koro Omni Online. Brain pathways active. Developed by Usama. I can now generate logos and remember our conversation history. How can I assist?",
+  es: "Koro Omni en línea. Vías cerebrales activas. Desarrollado por Usama. Ahora puedo generar logotipos y recordar nuestra historia. ¿Cómo puedo ayudar?",
+  fr: "Koro Omni en ligne. Voies cérébrales actives. Développé par Usama. Je peux maintenant générer des logos et mémoriser notre histoire. Comment puis-je vous aider?",
+  ur: "کورو اونی آن لائن۔ دماغی راستے فعال۔ اسامہ کا تیار کردہ۔ اب میں لوگو بنا سکتا ہوں اور ہماری گفتگو کی تاریخ یاد رکھ سکتا ہوں۔ میں کیسے مدد کر سکتا ہوں؟",
+  ar: "كورو أومني متصل. المسارات الدماغية نشطة. تم تطويره بواسطة أسامة. يمكنني الآن إنشاء شعارات وتذكر تاريخنا. كيف يمكنني مساعدتك؟"
 };
 
+// Fixed: Added missing translations for es, fr, and ar to satisfy the Record<Language, any> type requirement
 export const UI_STRINGS: Record<Language, any> = {
   en: {
-    thinking: "Koro is flashing logic...",
-    inputPlaceholder: "Engage with Flash-Lite Engine...",
-    newChat: "New Flash Sync",
-    history: "Speed Archives",
+    thinking: "Koro is accessing memory...",
+    inputPlaceholder: "Ask to design a logo or just chat...",
+    newChat: "New Omni Sync",
+    history: "Neural Archives",
     developedBy: "Handcrafted by Usama",
-    specs: "Flash Architecture",
-    modelName: "Fast Designation",
+    specs: "Omni Architecture",
+    modelName: "Model Designation",
     version: "Active Revision",
     architecture: "Logic Framework",
-    settings: "System Config"
+    settings: "Brain Config"
   },
   es: {
-    thinking: "Koro está procesando...",
-    inputPlaceholder: "Interactuar con el motor Flash-Lite...",
-    newChat: "Nueva sincronización rápida",
-    history: "Archivos rápidos",
-    developedBy: "Creado por Usama",
-    specs: "Arquitectura Flash",
-    modelName: "Designación rápida",
-    version: "Revisión activa",
-    architecture: "Marco lógico",
-    settings: "Configuración"
+    thinking: "Koro está accediendo a la memoria...",
+    inputPlaceholder: "Pide diseñar un logo o simplemente chatea...",
+    newChat: "Nueva Sincronización Omni",
+    history: "Archivos Neurales",
+    developedBy: "Hecho a mano por Usama",
+    specs: "Arquitectura Omni",
+    modelName: "Designación del Modelo",
+    version: "Revisión Activa",
+    architecture: "Marco Lógico",
+    settings: "Configuración del Cerebro"
   },
   fr: {
-    thinking: "Koro flashe la logique...",
-    inputPlaceholder: "Interagir avec le moteur Flash-Lite...",
-    newChat: "Nouvelle synchro flash",
-    history: "Archives rapides",
-    developedBy: "Conçu par Usama",
-    specs: "Architecture Flash",
-    modelName: "Désignation rapide",
-    version: "Révision active",
-    architecture: "Cadre logique",
-    settings: "Configuration"
+    thinking: "Koro accède à la mémoire...",
+    inputPlaceholder: "Demandez à concevoir un logo ou discutez simplement...",
+    newChat: "Nouvelle Synchronisation Omni",
+    history: "Archives Neurales",
+    developedBy: "Fabriqué à la main par Usama",
+    specs: "Architecture Omni",
+    modelName: "Désignation du Modèle",
+    version: "Révision Active",
+    architecture: "Cadre Logique",
+    settings: "Configuration du Cerveau"
   },
   ur: {
-    thinking: "کورو تیزی سے سوچ رہا ہے...",
-    inputPlaceholder: "فلیش لائٹ انجن کے ساتھ بات کریں...",
-    newChat: "نیا تیز سیشن",
-    history: "تاریخی ریکارڈ",
+    thinking: "کورو دماغ سے معلومات نکال رہا ہے...",
+    inputPlaceholder: "لوگو ڈیزائن کرنے کا کہیں یا بات کریں...",
+    newChat: "نیا سیشن",
+    history: "اعصابی ریکارڈ",
     developedBy: "اسامہ کی تخلیق",
-    specs: "فلیش فن تعمیر",
-    modelName: "تیز نام",
+    specs: "اونی فن تعمیر",
+    modelName: "بنیادی نام",
     version: "فعال ورژن",
     architecture: "منطقی فریم ورک",
-    settings: "ترتیبات"
+    settings: "دماغی ترتیبات"
   },
   ar: {
-    thinking: "كورو يفكر بسرعة...",
-    inputPlaceholder: "تواصل مع محرك فلاش لايت...",
-    newChat: "مزامنة سريعة جديدة",
-    history: "الأرشيفات السريعة",
+    thinking: "كورو يصل إلى الذاكرة...",
+    inputPlaceholder: "اطلب تصميم شعار أو مجرد دردشة...",
+    newChat: "مزامنة أومني جديدة",
+    history: "الأرشيفات العصبية",
     developedBy: "صنع يدويا بواسطة أسامة",
-    specs: "هندسة الفلاش",
-    modelName: "التسمية السريعة",
+    specs: "هندسة أومني",
+    modelName: "تسمية النموذج",
     version: "المراجعة النشطة",
     architecture: "إطار المنطق",
-    settings: "الإعدادات"
+    settings: "تكوين الدماغ"
   }
 };

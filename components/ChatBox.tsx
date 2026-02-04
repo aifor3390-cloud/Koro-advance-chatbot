@@ -58,7 +58,7 @@ const AttachmentPreview: React.FC<{ attachment: Attachment }> = ({ attachment })
           <FileText className="w-6 h-6" />
         </div>
         <div className="overflow-hidden">
-          <p className="text-sm font-bold truncate dark:text-zinc-100">{attachment.name || "Document"}</p>
+          <p className="text-sm font-bold truncate text-slate-800 dark:text-zinc-100">{attachment.name || "Document"}</p>
           <div className="flex items-center space-x-2">
             <p className="text-[10px] text-zinc-400 font-black uppercase tracking-widest">{attachment.mimeType.split('/')[1]}</p>
           </div>
@@ -91,7 +91,7 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ message, theme }) => {
             K
           </div>
         )}
-        <span className="text-[10px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-[0.3em]">
+        <span className="text-[10px] font-black text-zinc-500 dark:text-zinc-500 uppercase tracking-[0.3em]">
           {isAssistant ? 'Koro Platinum' : 'Neural Operator'}
         </span>
         {!isAssistant && (
@@ -105,8 +105,8 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ message, theme }) => {
         relative max-w-[95%] md:max-w-[85%] rounded-[2rem] px-8 py-6 text-lg leading-relaxed 
         transition-all border
         ${isAssistant 
-          ? 'bg-white dark:bg-zinc-900 text-slate-700 dark:text-zinc-100 border-zinc-200 dark:border-zinc-800 rounded-tl-none shadow-2xl dark:shadow-none' 
-          : 'bg-indigo-600 text-white border-indigo-500 rounded-tr-none shadow-2xl shadow-indigo-600/20'
+          ? 'bg-white dark:bg-zinc-900 text-slate-800 dark:text-zinc-100 border-zinc-200 dark:border-zinc-800 rounded-tl-none shadow-xl dark:shadow-none' 
+          : 'bg-indigo-600 text-white border-indigo-500 rounded-tr-none shadow-xl shadow-indigo-600/20'
         }
       `}>
         {isAssistant && message.thoughtProcess && message.thoughtProcess.length > 0 && (
@@ -124,7 +124,7 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ message, theme }) => {
             {showThoughts && (
               <div className="mt-3 space-y-2 pl-4 border-l-2 border-indigo-500/30 animate-in fade-in slide-in-from-top-2">
                 {message.thoughtProcess.map((thought, idx) => (
-                  <p key={idx} className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 italic">
+                  <p key={idx} className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400 italic">
                     <span className="text-indigo-500 mr-2">●</span> {thought}
                   </p>
                 ))}
@@ -150,7 +150,7 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ message, theme }) => {
               components={{
                 pre: ({node, ...props}) => (
                   <div className="relative group/code my-4">
-                    <pre className="bg-zinc-100 dark:bg-zinc-800 p-6 rounded-2xl overflow-x-auto border border-zinc-200 dark:border-zinc-700 font-mono text-sm leading-6" {...props} />
+                    <pre className="bg-zinc-50 dark:bg-zinc-800 p-6 rounded-2xl overflow-x-auto border border-zinc-200 dark:border-zinc-700 font-mono text-sm leading-6" {...props} />
                   </div>
                 ),
                 p: ({children}) => <p className="mb-4 last:mb-0 leading-8">{children}</p>,
@@ -172,7 +172,7 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ message, theme }) => {
                     href={chunk.web.uri}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center space-x-2 bg-zinc-100 dark:bg-zinc-800/50 hover:bg-indigo-500/10 border border-zinc-200 dark:border-zinc-700/60 rounded-xl px-3 py-1.5 transition-all group/link"
+                    className="flex items-center space-x-2 bg-zinc-50 dark:bg-zinc-800/50 hover:bg-indigo-500/10 border border-zinc-200 dark:border-zinc-700/60 rounded-xl px-3 py-1.5 transition-all group/link"
                   >
                     <span className="text-[10px] font-bold text-zinc-600 dark:text-zinc-400 truncate max-w-[150px]">
                       {chunk.web.title || chunk.web.uri}
@@ -190,9 +190,9 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ message, theme }) => {
         <span className="text-[10px] text-zinc-400 dark:text-zinc-600 font-black uppercase tracking-widest">
           {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </span>
-        <div className="w-1 h-1 bg-zinc-700 rounded-full"></div>
+        <div className="w-1 h-1 bg-zinc-300 dark:bg-zinc-700 rounded-full"></div>
         <button 
-          className="text-[10px] text-indigo-500 font-black uppercase tracking-widest" 
+          className="text-[10px] text-indigo-500 font-black uppercase tracking-widest hover:text-indigo-600 transition-colors" 
           onClick={() => navigator.clipboard.writeText(message.content)}
         >
           Copy
