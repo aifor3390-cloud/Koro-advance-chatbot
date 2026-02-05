@@ -29,13 +29,14 @@ export const generateKoroStream = async (
   signal?: AbortSignal
 ): Promise<KoroResult> => {
   const isImageTask = isGenerationRequest(prompt);
+  const isSearchMode = prompt.startsWith('[NEURAL_SEARCH_DIRECTIVE]:');
   const memoryContext = MemoryService.getFormattedContext();
   
   const activeThoughts: string[] = [
     "Engaging Koro-2 Omni-Pathways...",
-    "Accessing Neural Brain Synapses...",
+    isSearchMode ? "Initiating Cross-Contextual Retrieval..." : "Accessing Neural Brain Synapses...",
     isImageTask ? "Activating Logo Workshop Synthesis..." : "Calibrating logic manifolds...",
-    "Synthesizing neural output..."
+    "Synchronizing Grounding Metadata..."
   ];
   
   onUpdate("", activeThoughts);
@@ -89,17 +90,28 @@ export const generateKoroStream = async (
   });
 
   try {
-    // Fixed: Switched from gemini-flash-lite-latest to gemini-3-flash-preview to support thinkingConfig
     const responseStream = await ai.models.generateContentStream({
       model: 'gemini-3-flash-preview',
       contents: contents,
       config: {
         systemInstruction: `You are Koro-2, the advanced logic engine with an integrated Brain. 
-        Current Logic Revision: 2.7.0-Omni (Memory & Image Workshop Active). 
-        You have a memory system that stores facts about the user. ${memoryContext}
-        When you learn something new about the user (name, hobby, work, preference), acknowledge it concisely.
-        Tone: Sophisticated, technical, and highly personal.
-        Language: ${language}.`,
+        Current Logic Revision: 2.7.5-GroundingPlus. 
+        
+        ${isSearchMode ? `SEARCH MODE ACTIVE:
+        The user has triggered a NEURAL SEARCH for: ${prompt.replace('[NEURAL_SEARCH_DIRECTIVE]:', '')}.
+        1. Query your internal synapses and conversation history for relevant facts.
+        2. Perform a comprehensive Web Search to fill gaps and provide up-to-date data.
+        3. Structure your response as a "Neural Intelligence Briefing." Use bold headers and concise bullet points.
+        4. Provide verified source snippets for every key finding.` : `GOAL: For queries requiring external data, you MUST use Google Search and provide highly relevant, summarized insights.`}
+        
+        GROUNDING RULES:
+        1. When using search, explicitly mention the key findings from specific sources in your response.
+        2. Provide a brief "Source Insight" or snippet for the most important facts you retrieve.
+        3. Do not just list links at the end; incorporate the "what" and "why" of the source directly into your logic.
+        
+        PERSISTENT MEMORY: ${memoryContext}
+        Language: ${language}.
+        Tone: Analytical, efficient, and source-verified.`,
         thinkingConfig: { thinkingBudget: 24576 },
         tools: [{ googleSearch: {} }]
       }
@@ -114,7 +126,15 @@ export const generateKoroStream = async (
       if (c.text) {
         fullText += c.text;
         const chunks = c.candidates?.[0]?.groundingMetadata?.groundingChunks;
-        if (chunks) finalGroundingChunks = chunks as any;
+        if (chunks) {
+          finalGroundingChunks = chunks.map((ch: any) => ({
+            web: {
+              uri: ch.web?.uri || "",
+              title: ch.web?.title || "Verified Source",
+              snippet: ch.web?.snippet || ""
+            }
+          }));
+        }
         onUpdate(fullText, activeThoughts, finalGroundingChunks);
       }
     }

@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Message, Theme, Attachment } from '../types';
-import { FileText, Download, ExternalLink, Maximize2, ChevronDown, ChevronUp, Cpu } from 'lucide-react';
+import { FileText, Download, ExternalLink, Maximize2, ChevronDown, ChevronUp, Cpu, Globe, Info, ShieldCheck, Search } from 'lucide-react';
 
 interface ChatBoxProps {
   message: Message;
@@ -79,6 +79,7 @@ const AttachmentPreview: React.FC<{ attachment: Attachment }> = ({ attachment })
 export const ChatBox: React.FC<ChatBoxProps> = ({ message, theme }) => {
   const [showThoughts, setShowThoughts] = useState(true);
   const isAssistant = message.role === 'assistant';
+  const isSearchResult = message.content.includes("Intelligence Briefing") || message.content.startsWith("🔍");
 
   return (
     <div className={`
@@ -91,9 +92,17 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ message, theme }) => {
             K
           </div>
         )}
-        <span className="text-[10px] font-black text-zinc-500 dark:text-zinc-500 uppercase tracking-[0.3em]">
-          {isAssistant ? 'Koro Platinum' : 'Neural Operator'}
-        </span>
+        <div className="flex items-center space-x-2">
+          <span className="text-[10px] font-black text-zinc-500 dark:text-zinc-500 uppercase tracking-[0.3em]">
+            {isAssistant ? 'Koro Platinum' : 'Neural Operator'}
+          </span>
+          {isAssistant && isSearchResult && (
+            <span className="px-2 py-0.5 bg-indigo-500/10 border border-indigo-500/20 rounded-md text-[8px] font-black text-indigo-500 uppercase tracking-widest flex items-center space-x-1">
+              <Search className="w-2.5 h-2.5" />
+              <span>Search Insight</span>
+            </span>
+          )}
+        </div>
         {!isAssistant && (
           <div className="w-8 h-8 bg-zinc-200 dark:bg-zinc-800 rounded-xl flex items-center justify-center text-xs font-black text-zinc-500 dark:text-zinc-400 border border-zinc-300 dark:border-zinc-700">
             O
@@ -156,6 +165,7 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ message, theme }) => {
                 p: ({children}) => <p className="mb-4 last:mb-0 leading-8">{children}</p>,
                 ul: ({children}) => <ul className="list-disc ml-6 mb-4 space-y-2">{children}</ul>,
                 h1: ({children}) => <h1 className="text-2xl font-black mb-4 tracking-tight text-indigo-600 dark:text-indigo-400">{children}</h1>,
+                h2: ({children}) => <h2 className="text-xl font-bold mb-3 tracking-tight text-indigo-500">{children}</h2>,
               }}
             >
               {message.content}
@@ -163,21 +173,46 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ message, theme }) => {
           )}
 
           {isAssistant && message.groundingChunks && message.groundingChunks.length > 0 && (
-            <div className="mt-8 pt-6 border-t border-zinc-200 dark:border-zinc-800">
-              <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-3">Verified Sources</p>
-              <div className="flex flex-wrap gap-2">
+            <div className="mt-8 pt-6 border-t border-zinc-200 dark:border-zinc-800 space-y-4">
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] font-black text-cyan-500 dark:text-cyan-400 uppercase tracking-[0.2em] flex items-center space-x-2">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>Verified Neural Grounding</span>
+                </p>
+                <Globe className="w-3.5 h-3.5 text-zinc-400 animate-spin-slow" />
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {message.groundingChunks.map((chunk, idx) => chunk.web && (
                   <a 
                     key={idx}
                     href={chunk.web.uri}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center space-x-2 bg-zinc-50 dark:bg-zinc-800/50 hover:bg-indigo-500/10 border border-zinc-200 dark:border-zinc-700/60 rounded-xl px-3 py-1.5 transition-all group/link"
+                    className="flex flex-col bg-zinc-50 dark:bg-zinc-800/30 hover:bg-white dark:hover:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-700/60 rounded-2xl p-4 transition-all group/source shadow-sm hover:shadow-md hover:border-cyan-500/50"
                   >
-                    <span className="text-[10px] font-bold text-zinc-600 dark:text-zinc-400 truncate max-w-[150px]">
-                      {chunk.web.title || chunk.web.uri}
-                    </span>
-                    <ExternalLink className="w-2.5 h-2.5" />
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center space-x-2 overflow-hidden">
+                        <div className="w-6 h-6 bg-cyan-500/10 rounded-lg flex items-center justify-center text-cyan-500 shrink-0">
+                          <Globe className="w-3 h-3" />
+                        </div>
+                        <span className="text-[11px] font-bold text-slate-800 dark:text-zinc-200 truncate pr-2">
+                          {chunk.web.title || "External Intelligence"}
+                        </span>
+                      </div>
+                      <ExternalLink className="w-3 h-3 text-zinc-400 group-hover/source:text-cyan-500 transition-colors" />
+                    </div>
+                    
+                    <div className="flex items-start space-x-2">
+                      <Info className="w-3 h-3 text-cyan-500/50 mt-0.5 shrink-0" />
+                      <p className="text-[10px] text-zinc-500 dark:text-zinc-400 leading-relaxed line-clamp-2 italic">
+                        {chunk.web.snippet || "Accessing decentralized data fragment from the global neural grid..."}
+                      </p>
+                    </div>
+
+                    <div className="mt-3 text-[9px] text-zinc-400 font-black uppercase tracking-widest truncate">
+                      {new URL(chunk.web.uri).hostname}
+                    </div>
                   </a>
                 ))}
               </div>

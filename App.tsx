@@ -8,7 +8,7 @@ import { Message, KoroState, ChatSession, Language, Attachment } from './types';
 import { KORO_SPECS, INITIAL_MESSAGE, UI_STRINGS } from './constants';
 import { generateKoroStream } from './services/koroEngine';
 import { MemoryService } from './services/memoryService';
-import { Menu, Cpu, Bolt, Brain } from 'lucide-react';
+import { Menu, Cpu, Bolt, Brain, Search } from 'lucide-react';
 
 const App: React.FC = () => {
   const [state, setState] = useState<KoroState>(() => {
@@ -19,13 +19,17 @@ const App: React.FC = () => {
         return {
           ...parsed,
           isProcessing: false,
-          sessions: parsed.sessions.map((s: any) => ({
+          theme: parsed.theme || 'dark', // Ensure theme persistence
+          language: parsed.language || 'en', // Ensure language persistence
+          sessions: (parsed.sessions || []).map((s: any) => ({
             ...s,
             createdAt: new Date(s.createdAt),
-            messages: s.messages.map((m: any) => ({ ...m, timestamp: new Date(m.timestamp) }))
+            messages: (s.messages || []).map((m: any) => ({ ...m, timestamp: new Date(m.timestamp) }))
           }))
         };
-      } catch (e) { console.error("Restore failed", e); }
+      } catch (e) { 
+        console.error("Neural state restoration failed, reverting to defaults", e); 
+      }
     }
 
     const initialId = Date.now().toString();
@@ -52,6 +56,7 @@ const App: React.FC = () => {
   const currentSession = state.sessions.find(s => s.id === state.currentSessionId) || state.sessions[0];
   const t = UI_STRINGS[state.language];
 
+  // Apply theme classes and persist state on every state change
   useEffect(() => {
     localStorage.setItem('koro_v2_store', JSON.stringify(state));
     document.documentElement.classList.toggle('dark', state.theme === 'dark');
@@ -64,7 +69,6 @@ const App: React.FC = () => {
 
   useEffect(() => scrollToBottom('auto'), [state.currentSessionId, scrollToBottom]);
 
-  // Simple logic to extract memories from conversation
   const updateNeuralBrain = (text: string) => {
     const patterns = [
       /i am (.*)/i,
@@ -83,14 +87,23 @@ const App: React.FC = () => {
     });
   };
 
-  const handleSendMessage = async (content: string, attachments?: Attachment[]) => {
+  const handleSendMessage = async (content: string, attachments?: Attachment[], isSearchMode: boolean = false) => {
     if ((!content.trim() && !attachments?.length) || state.isProcessing) return;
 
-    // Check for memory facts in user input
-    updateNeuralBrain(content);
+    if (!isSearchMode) updateNeuralBrain(content);
 
     abortControllerRef.current = new AbortController();
-    const userMsg: Message = { id: Date.now().toString(), role: 'user', content, timestamp: new Date(), attachments };
+    
+    const finalContent = isSearchMode ? `[NEURAL_SEARCH_DIRECTIVE]: ${content}` : content;
+
+    const userMsg: Message = { 
+      id: Date.now().toString(), 
+      role: 'user', 
+      content: isSearchMode ? `🔍 Search: ${content}` : content, 
+      timestamp: new Date(), 
+      attachments 
+    };
+    
     const assistantMsgId = (Date.now() + 1).toString();
     
     setState(prev => ({
@@ -107,7 +120,7 @@ const App: React.FC = () => {
 
     try {
       const result = await generateKoroStream(
-        content || "Analyze.",
+        finalContent,
         [...currentSession.messages, userMsg],
         state.language,
         (text, thoughts, chunks) => {
@@ -134,7 +147,6 @@ const App: React.FC = () => {
         abortControllerRef.current.signal
       );
 
-      // If an image was generated, attach it to the message
       if (result.generatedImage) {
         setState(prev => ({
           ...prev,
@@ -186,7 +198,16 @@ const App: React.FC = () => {
         <div className="flex items-center px-4 lg:px-8 border-b border-zinc-200 dark:border-zinc-800/50 h-16 shrink-0 bg-white dark:bg-[#0b0b0d]/50 backdrop-blur-md z-10">
           <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden p-2 -ml-2 text-zinc-500 hover:text-indigo-600 rounded-lg transition-colors"><Menu className="w-6 h-6" /></button>
           <div className="flex-1">
-             <Header activeModel="Koro-2 Omni Brain" author={state.author} theme={state.theme} onToggleTheme={() => setState(p => ({...p, theme: p.theme === 'dark' ? 'light' : 'dark'}))} language={state.language} onSetLanguage={(l) => setState(p => ({...p, language: l}))} />
+             <Header 
+               activeModel="Koro-2 Omni Brain" 
+               author={state.author} 
+               theme={state.theme} 
+               onToggleTheme={() => setState(p => ({...p, theme: p.theme === 'dark' ? 'light' : 'dark'}))} 
+               language={state.language} 
+               onSetLanguage={(l) => setState(p => ({...p, language: l}))}
+               onSearch={(query) => handleSendMessage(query, undefined, true)}
+               isSearching={state.isProcessing}
+             />
           </div>
         </div>
         <div className="flex-1 overflow-y-auto relative pt-4 bg-slate-50 dark:bg-[#050507] transition-colors duration-300">
@@ -199,7 +220,7 @@ const App: React.FC = () => {
               {state.isProcessing && (
                 <div className="flex items-center space-x-3 text-indigo-500 px-4 animate-pulse">
                   <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
-                  <span className="text-xs font-bold uppercase tracking-widest">Accessing Synapses...</span>
+                  <span className="text-xs font-bold uppercase tracking-widest">Scanning Logic Grid...</span>
                 </div>
               )}
               <div ref={chatEndRef} className="h-4" />
@@ -209,7 +230,7 @@ const App: React.FC = () => {
           <div className="max-w-4xl mx-auto">
              <UserInput onSend={handleSendMessage} onStop={() => abortControllerRef.current?.abort()} disabled={state.isProcessing} placeholder={t.inputPlaceholder} language={state.language} />
              <div className="mt-4 text-center">
-                <p className="text-[10px] text-zinc-400 dark:text-zinc-600 font-medium uppercase tracking-[0.2em]">Koro-2 Omni • Persistent Brain • Logo Workshop Active</p>
+                <p className="text-[10px] text-zinc-400 dark:text-zinc-600 font-medium uppercase tracking-[0.2em]">Koro-2 Omni • Neural Search Enabled • Logo Workshop Active</p>
              </div>
           </div>
         </div>

@@ -15,6 +15,7 @@ export interface GroundingChunk {
   web?: {
     uri: string;
     title: string;
+    snippet?: string; // Enhanced snippet support
   };
 }
 
