@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { ChatBox } from './components/ChatBox';
@@ -16,11 +15,12 @@ const App: React.FC = () => {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
+        const lang = parsed.language || 'en';
         return {
           ...parsed,
           isProcessing: false,
-          theme: parsed.theme || 'dark', // Ensure theme persistence
-          language: parsed.language || 'en', // Ensure language persistence
+          theme: parsed.theme || 'dark',
+          language: lang,
           sessions: (parsed.sessions || []).map((s: any) => ({
             ...s,
             createdAt: new Date(s.createdAt),
@@ -33,19 +33,20 @@ const App: React.FC = () => {
     }
 
     const initialId = Date.now().toString();
+    const defaultLang = 'en';
     return {
       isProcessing: false,
       sessions: [{
         id: initialId,
         title: "Initial Synchrony",
-        messages: [{ id: '1', role: 'assistant', content: INITIAL_MESSAGE.en, timestamp: new Date() }],
+        messages: [{ id: '1', role: 'assistant', content: INITIAL_MESSAGE[defaultLang], timestamp: new Date() }],
         createdAt: new Date()
       }],
       currentSessionId: initialId,
       activeModel: KORO_SPECS.name,
       author: KORO_SPECS.author,
       theme: 'dark',
-      language: 'en'
+      language: defaultLang
     };
   });
 
@@ -56,11 +57,18 @@ const App: React.FC = () => {
   const currentSession = state.sessions.find(s => s.id === state.currentSessionId) || state.sessions[0];
   const t = UI_STRINGS[state.language];
 
-  // Apply theme classes and persist state on every state change
+  // Apply preferences to the DOM and persist to localStorage
   useEffect(() => {
     localStorage.setItem('koro_v2_store', JSON.stringify(state));
-    document.documentElement.classList.toggle('dark', state.theme === 'dark');
-    document.body.className = state.theme === 'dark' ? 'bg-[#050507] text-zinc-100' : 'bg-slate-50 text-slate-900';
+    
+    const isDark = state.theme === 'dark';
+    document.documentElement.classList.toggle('dark', isDark);
+    document.body.className = isDark ? 'bg-[#050507] text-zinc-100' : 'bg-slate-50 text-slate-900';
+    
+    // Handle RTL and language attributes
+    const isRTL = state.language === 'ar' || state.language === 'ur';
+    document.documentElement.dir = isRTL ? 'rtl' : 'ltr';
+    document.documentElement.lang = state.language;
   }, [state]);
 
   const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
@@ -191,12 +199,27 @@ const App: React.FC = () => {
 
   return (
     <div className="flex h-screen w-full bg-slate-50 dark:bg-[#050507] text-slate-900 dark:text-zinc-100 overflow-hidden font-sans transition-colors duration-300">
-      <div className={`fixed lg:relative z-50 h-full w-[300px] transition-transform duration-300 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
+      <div 
+        className={`fixed lg:relative z-50 h-full w-[300px] transition-transform duration-300 transform 
+          ${isSidebarOpen 
+            ? 'translate-x-0' 
+            : (state.language === 'ar' || state.language === 'ur' ? 'translate-x-full lg:translate-x-0' : '-translate-x-full lg:translate-x-0')
+          }
+        `}
+      >
         <Sidebar specs={KORO_SPECS} sessions={state.sessions} currentId={state.currentSessionId} onSelect={(id) => { setState(p => ({...p, currentSessionId: id})); setIsSidebarOpen(false); }} onDelete={(id) => setState(p => { const filtered = p.sessions.filter(s => s.id !== id); return { ...p, sessions: filtered.length ? filtered : p.sessions, currentSessionId: filtered.length ? filtered[0].id : p.currentSessionId }; })} onNew={createNewChat} language={state.language} />
       </div>
+      
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       <main className="flex flex-col flex-1 h-full min-w-0 bg-white dark:bg-[#0b0b0d] relative transition-colors duration-300">
         <div className="flex items-center px-4 lg:px-8 border-b border-zinc-200 dark:border-zinc-800/50 h-16 shrink-0 bg-white dark:bg-[#0b0b0d]/50 backdrop-blur-md z-10">
-          <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden p-2 -ml-2 text-zinc-500 hover:text-indigo-600 rounded-lg transition-colors"><Menu className="w-6 h-6" /></button>
+          <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden p-2 -mx-2 text-zinc-500 hover:text-indigo-600 rounded-lg transition-colors"><Menu className="w-6 h-6" /></button>
           <div className="flex-1">
              <Header 
                activeModel="Koro-2 Omni Brain" 
@@ -211,7 +234,7 @@ const App: React.FC = () => {
           </div>
         </div>
         <div className="flex-1 overflow-y-auto relative pt-4 bg-slate-50 dark:bg-[#050507] transition-colors duration-300">
-           <div className="absolute top-4 right-4 z-10 px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded-full flex items-center space-x-2">
+           <div className={`absolute top-4 ${state.language === 'ar' || state.language === 'ur' ? 'left-4' : 'right-4'} z-10 px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded-full flex items-center space-x-2`}>
              <Brain className="w-3 h-3 text-indigo-500 animate-pulse" />
              <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest">Neural Brain Synced</span>
            </div>

@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,21 +6,35 @@
     <title>Koro AI | Advanced Neural Model</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-      // Immediately apply theme before CSS or React loads to prevent flicker
+      // Immediate boot logic to prevent theme and layout flickering
       (function() {
         try {
           const saved = localStorage.getItem('koro_v2_store');
+          let theme = 'dark';
+          let lang = 'en';
+
           if (saved) {
-            const theme = JSON.parse(saved).theme;
-            if (theme === 'light') {
-              document.documentElement.classList.remove('dark');
-            } else {
-              document.documentElement.classList.add('dark');
-            }
+            const state = JSON.parse(saved);
+            theme = state.theme || 'dark';
+            lang = state.language || 'en';
+          }
+
+          // Apply theme
+          if (theme === 'light') {
+            document.documentElement.classList.remove('dark');
           } else {
-            // Default to dark if no setting exists
             document.documentElement.classList.add('dark');
           }
+
+          // Apply text direction for immediate layout stability
+          if (lang === 'ar' || lang === 'ur') {
+            document.documentElement.dir = 'rtl';
+          } else {
+            document.documentElement.dir = 'ltr';
+          }
+          
+          // Set lang attribute
+          document.documentElement.lang = lang;
         } catch (e) {
           document.documentElement.classList.add('dark');
         }
@@ -91,6 +104,13 @@
         }
         .markdown-body code {
             font-family: 'Fira Code', monospace;
+        }
+        /* Handle RTL layout smooth transition */
+        [dir="rtl"] .sidebar-transition {
+            transform: translateX(100%);
+        }
+        [dir="rtl"] .sidebar-transition.open {
+            transform: translateX(0);
         }
     </style>
     <!-- Google Identity Services -->

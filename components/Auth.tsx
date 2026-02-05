@@ -1,8 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { Mail, Lock, Loader2, ShieldCheck, Zap, ChevronRight, User as UserIcon, AlertCircle, ArrowLeft, Eye, EyeOff, CheckCircle2, Terminal, Cpu, Globe } from 'lucide-react';
 import { User } from '../types';
 import { AuthService } from '../services/authService';
+import { PlatinumLogo } from './Header';
 
 const GoogleLogo = () => (
   <svg viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg">
@@ -50,10 +50,6 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
       avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=bypass`, 
       provider: 'bypass' 
     });
-  };
-
-  const handleAutonomousOverride = () => {
-    AuthService.enableAutonomousMode();
   };
 
   const validate = () => {
@@ -130,28 +126,25 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
       </div>
       
       <div className="relative w-full max-w-[560px] py-10 animate-in fade-in zoom-in-95 duration-700">
-        <div className="bg-zinc-900/40 backdrop-blur-3xl border border-white/10 rounded-[4rem] p-10 md:p-14 shadow-[0_0_150px_rgba(0,0,0,0.9)] relative overflow-hidden">
-          {/* Active Status Bar */}
+        <div className="bg-zinc-900/40 backdrop-blur-3xl border border-white/10 rounded-[4rem] p-10 md:p-14 shadow-[0_0_150px_rgba(0,0,0,0.9)] relative overflow-hidden text-center">
           <div className="absolute top-0 left-0 right-0 h-1 flex">
-             <div className="flex-1 bg-indigo-600 shadow-[0_0_10px_rgba(79,70,229,0.5)]" />
-             <div className="flex-1 bg-purple-600 shadow-[0_0_10px_rgba(147,51,234,0.5)]" />
-             <div className="flex-1 bg-cyan-600 shadow-[0_0_10px_rgba(8,145,178,0.5)]" />
+             <div className="flex-1 bg-indigo-600" />
+             <div className="flex-1 bg-cyan-600" />
+             <div className="flex-1 bg-purple-600" />
           </div>
 
-          <div className="text-center mb-12">
-            <div className="relative inline-flex mb-10 group">
-              <div className="absolute inset-0 bg-indigo-500/20 blur-3xl rounded-3xl group-hover:bg-indigo-500/40 transition-all duration-500"></div>
-              <div className="relative w-20 h-20 bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-3xl flex items-center justify-center text-white font-black text-3xl shadow-2xl shadow-indigo-600/20 ring-1 ring-white/20">K</div>
-            </div>
-            <h1 className="text-4xl font-black tracking-tight text-white mb-3 font-['Space_Grotesk']">
-              {mode === 'signup' ? 'Sync Identity' : mode === 'reset' ? 'Restore Link' : 'Neural Access'}
-            </h1>
-            <p className="text-zinc-500 text-[10px] font-black uppercase tracking-[0.6em] opacity-80">
-              Koro-2 Autonomous Model v2.5
-            </p>
+          <div className="relative flex justify-center mb-10">
+            <PlatinumLogo size="lg" />
           </div>
+          
+          <h1 className="text-4xl font-black tracking-tight text-white mb-3 font-['Space_Grotesk']">
+            {mode === 'signup' ? 'Sync Identity' : mode === 'reset' ? 'Restore Link' : 'Neural Access'}
+          </h1>
+          <p className="text-zinc-500 text-[10px] font-black uppercase tracking-[0.6em] opacity-80 mb-12">
+            Koro Platinum Neural Core
+          </p>
 
-          <div className="space-y-8">
+          <div className="space-y-8 text-left">
             {error && (
               <div className={`p-8 rounded-[2.5rem] flex flex-col space-y-6 animate-in shake-in duration-300 border-2 ${isDomainError ? 'bg-amber-500/10 border-amber-500/30 shadow-[0_0_40px_rgba(245,158,11,0.1)]' : 'bg-red-500/5 border-red-500/20'}`}>
                 <div className="flex items-start space-x-4">
@@ -174,24 +167,6 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
                     </pre>
                   </div>
                 </div>
-                
-                {isDomainError && (
-                  <div className="flex flex-col space-y-3 pt-2">
-                    <button 
-                      onClick={handleAutonomousOverride}
-                      className="w-full flex items-center justify-center space-x-3 py-5 bg-amber-500 hover:bg-amber-400 text-black rounded-[1.5rem] transition-all shadow-2xl shadow-amber-500/30 group font-black uppercase text-[11px] tracking-widest ring-1 ring-white/20"
-                    >
-                      <Cpu className="w-5 h-5 animate-pulse" />
-                      <span>Engage Autonomous Engine Bypass</span>
-                    </button>
-                    <button 
-                      onClick={() => setError(null)}
-                      className="w-full py-4 bg-white/5 hover:bg-white/10 text-zinc-500 rounded-[1.2rem] transition-all text-[10px] font-black uppercase tracking-widest border border-white/5"
-                    >
-                      Dismiss System Alert
-                    </button>
-                  </div>
-                )}
               </div>
             )}
 
@@ -296,75 +271,40 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
                         <span className="text-[11px] uppercase tracking-[0.5em]">
                           {mode === 'signup' ? 'Initiate Sync' : mode === 'reset' ? 'Request Recovery' : 'Authorize Core'}
                         </span>
-                        <ChevronRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" />
+                        <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                       </>
                     )}
                   </button>
                 </form>
-              </>
-            )}
 
-            <div className="flex flex-col space-y-6 pt-6 text-center">
-              <div className="flex items-center justify-center space-x-10">
-                {mode === 'reset' ? (
-                  <button 
-                    type="button"
-                    onClick={() => setMode('login')}
-                    className="flex items-center space-x-3 text-[11px] text-zinc-500 font-black uppercase tracking-widest hover:text-white transition-colors"
-                  >
-                    <ArrowLeft className="w-4 h-4" />
-                    <span>Back to Registry</span>
-                  </button>
-                ) : (
-                  <>
-                    <button 
-                      type="button"
-                      onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setError(null); }}
-                      className="text-[11px] text-zinc-500 font-black uppercase tracking-widest hover:text-white transition-colors"
-                    >
-                      {mode === 'login' ? 'New Identity? Sync' : 'Registered? Login'}
+                <div className="flex flex-col space-y-4 pt-4">
+                  <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-zinc-600">
+                    <button onClick={() => setMode(mode === 'login' ? 'signup' : 'login')} className="hover:text-indigo-400 transition-colors">
+                      {mode === 'login' ? 'Create Registry Identity' : 'Existing Operator?'}
                     </button>
                     {mode === 'login' && (
-                      <button 
-                        type="button"
-                        onClick={() => setMode('reset')}
-                        className="text-[11px] text-zinc-500 font-black uppercase tracking-widest hover:text-indigo-400 transition-colors"
-                      >
-                        Reset Key
+                      <button onClick={() => setMode('reset')} className="hover:text-indigo-400 transition-colors">
+                        Restore Key
                       </button>
                     )}
-                  </>
-                )}
-              </div>
-              
-              {!isDomainError && (
-                <div className="pt-8 flex flex-col space-y-4 border-t border-white/5">
+                    {mode === 'reset' && (
+                      <button onClick={() => setMode('login')} className="flex items-center space-x-2 hover:text-indigo-400 transition-colors">
+                        <ArrowLeft className="w-3 h-3" />
+                        <span>Return to Auth</span>
+                      </button>
+                    )}
+                  </div>
+                  
                   <button 
-                    type="button"
                     onClick={handleBypass}
-                    className="w-full flex items-center justify-center space-x-3 py-4 border border-indigo-500/10 bg-indigo-500/5 rounded-[1.5rem] text-[10px] font-black text-indigo-400/60 uppercase tracking-[0.4em] hover:bg-indigo-500/10 hover:text-indigo-300 transition-all group"
+                    className="w-full py-3 bg-zinc-800/30 border border-white/5 rounded-2xl text-[9px] font-black text-zinc-500 uppercase tracking-[0.4em] hover:bg-zinc-800/60 hover:text-zinc-400 transition-all"
                   >
-                    <ShieldCheck className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                    <span>Run in Local Bypass</span>
-                  </button>
-                  <button 
-                    onClick={handleAutonomousOverride}
-                    className="text-[9px] text-zinc-700 font-black uppercase tracking-[0.5em] hover:text-zinc-500 transition-colors flex items-center justify-center space-x-2"
-                  >
-                    <Terminal className="w-3 h-3" />
-                    <span>Force Autonomous Engine</span>
+                    Bypass Authentication (Local Session Only)
                   </button>
                 </div>
-              )}
-            </div>
+              </>
+            )}
           </div>
-        </div>
-        
-        <div className="mt-10 flex flex-col items-center space-y-2 opacity-50">
-          <p className="text-zinc-700 text-[10px] font-black uppercase tracking-[0.8em]">
-            Usama Neural Systems
-          </p>
-          <div className="h-px w-20 bg-gradient-to-r from-transparent via-zinc-800 to-transparent" />
         </div>
       </div>
     </div>

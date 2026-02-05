@@ -1,9 +1,14 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Message, Theme, Attachment } from '../types';
-import { FileText, Download, ExternalLink, Maximize2, ChevronDown, ChevronUp, Cpu, Globe, Info, ShieldCheck, Search } from 'lucide-react';
+import { 
+  FileText, Download, ExternalLink, Maximize2, ChevronDown, ChevronUp, 
+  Cpu, Globe, Info, ShieldCheck, Search, Volume2, Loader2, 
+  Music, Play, Pause, User, Users 
+} from 'lucide-react';
+import { TTSService, VoicePersona } from '../services/ttsService';
 
 interface ChatBoxProps {
   message: Message;
@@ -78,8 +83,58 @@ const AttachmentPreview: React.FC<{ attachment: Attachment }> = ({ attachment })
 
 export const ChatBox: React.FC<ChatBoxProps> = ({ message, theme }) => {
   const [showThoughts, setShowThoughts] = useState(true);
+  const [isGeneratingVoice, setIsGeneratingVoice] = useState(false);
+  const [persona, setPersona] = useState<VoicePersona>('gentleman');
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const audioRef = useRef<HTMLAudioElement>(null);
+
   const isAssistant = message.role === 'assistant';
   const isSearchResult = message.content.includes("Intelligence Briefing") || message.content.startsWith("🔍");
+
+  const handleGenerateVoice = async () => {
+    // If audio already exists, just toggle it
+    if (audioUrl) {
+      toggleAudio();
+      return;
+    }
+
+    setIsGeneratingVoice(true);
+    try {
+      const result = await TTSService.generateSpeech(message.content, persona);
+      setAudioUrl(result.audioUrl);
+      setIsPlaying(true);
+      // Timeout to ensure audio ref is populated after state update
+      setTimeout(() => audioRef.current?.play(), 100);
+    } catch (err) {
+      console.error("Voice Sync Failed", err);
+    } finally {
+      setIsGeneratingVoice(false);
+    }
+  };
+
+  const toggleAudio = () => {
+    if (!audioRef.current) return;
+    if (isPlaying) {
+      audioRef.current.pause();
+    } else {
+      audioRef.current.play();
+    }
+    setIsPlaying(!isPlaying);
+  };
+
+  const downloadAudio = () => {
+    if (!audioUrl) return;
+    const a = document.createElement('a');
+    a.href = audioUrl;
+    a.download = `Koro_${persona}_Script_${Date.now()}.wav`;
+    a.click();
+  };
+
+  const resetVoice = () => {
+    setAudioUrl(null);
+    setIsPlaying(false);
+  };
 
   return (
     <div className={`
@@ -170,6 +225,97 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ message, theme }) => {
             >
               {message.content}
             </ReactMarkdown>
+          )}
+
+          {/* Voice Generation Section */}
+          {isAssistant && message.content.length > 20 && (
+            <div className="mt-6 pt-6 border-t border-zinc-200 dark:border-zinc-800 space-y-4">
+              
+              {/* Persona Selector */}
+              {!audioUrl && !isGeneratingVoice && (
+                <div className="flex flex-col space-y-2">
+                  <span className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em]">Voice Persona</span>
+                  <div className="flex p-1 bg-zinc-100 dark:bg-zinc-800 rounded-2xl w-fit">
+                    <button 
+                      onClick={() => setPersona('gentleman')}
+                      className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${persona === 'gentleman' ? 'bg-white dark:bg-zinc-700 text-indigo-600 shadow-sm' : 'text-zinc-500 hover:text-zinc-700'}`}
+                    >
+                      <User className="w-3 h-3" />
+                      <span>Gentleman</span>
+                    </button>
+                    <button 
+                      onClick={() => setPersona('lady')}
+                      className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${persona === 'lady' ? 'bg-white dark:bg-zinc-700 text-indigo-600 shadow-sm' : 'text-zinc-500 hover:text-zinc-700'}`}
+                    >
+                      <Users className="w-3 h-3" />
+                      <span>Lady</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between">
+                <button 
+                  onClick={handleGenerateVoice}
+                  disabled={isGeneratingVoice}
+                  className={`
+                    flex items-center space-x-3 px-5 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all
+                    ${audioUrl 
+                      ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' 
+                      : 'bg-indigo-600 text-white hover:bg-indigo-500 shadow-lg shadow-indigo-600/20'}
+                    disabled:opacity-50
+                  `}
+                >
+                  {isGeneratingVoice ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : audioUrl ? (
+                    isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />
+                  ) : (
+                    <Volume2 className="w-4 h-4" />
+                  )}
+                  <span>{isGeneratingVoice ? 'Synthesizing...' : audioUrl ? (isPlaying ? 'Pause Audio' : 'Resume Audio') : `Synthesize ${persona}`}</span>
+                </button>
+
+                {audioUrl && (
+                  <div className="flex items-center space-x-2">
+                    <button 
+                      onClick={resetVoice}
+                      className="p-3 text-zinc-400 hover:text-indigo-500 transition-colors"
+                      title="Change Voice"
+                    >
+                      <ChevronDown className="w-4 h-4" />
+                    </button>
+                    <button 
+                      onClick={downloadAudio}
+                      className="p-3 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 rounded-xl transition-all border border-zinc-200 dark:border-zinc-700 flex items-center space-x-2"
+                    >
+                      <Download className="w-4 h-4" />
+                      <span className="text-[10px] font-black uppercase tracking-widest">Download WAV</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {audioUrl && (
+                <div className="bg-zinc-50 dark:bg-zinc-800/50 p-4 rounded-2xl border border-zinc-200 dark:border-zinc-700/50 flex items-center space-x-4 animate-in fade-in slide-in-from-top-2">
+                   <div className={`p-2.5 rounded-xl ${isPlaying ? 'bg-indigo-500 text-white animate-pulse' : 'bg-zinc-200 dark:bg-zinc-700 text-zinc-500'}`}>
+                     <Music className="w-4 h-4" />
+                   </div>
+                   <div className="flex-1 overflow-hidden">
+                     <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-1">Neural Audio Stream: {persona}</p>
+                     <p className="text-[11px] text-zinc-500 dark:text-zinc-400 font-medium truncate">24kHz High Fidelity • PCM Encoding</p>
+                   </div>
+                   <audio 
+                    ref={audioRef} 
+                    src={audioUrl} 
+                    onEnded={() => setIsPlaying(false)} 
+                    onPlay={() => setIsPlaying(true)}
+                    onPause={() => setIsPlaying(false)}
+                    className="hidden" 
+                   />
+                </div>
+              )}
+            </div>
           )}
 
           {isAssistant && message.groundingChunks && message.groundingChunks.length > 0 && (

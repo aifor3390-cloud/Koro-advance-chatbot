@@ -1,7 +1,6 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Theme, Language } from '../types';
-import { Sun, Moon, Zap, Search, X, Loader2, Cpu } from 'lucide-react';
+import { Sun, Moon, Zap, Search, X, Loader2, Cpu, Hexagon } from 'lucide-react';
 
 interface HeaderProps {
   activeModel: string;
@@ -13,6 +12,35 @@ interface HeaderProps {
   onSearch: (query: string) => void;
   isSearching?: boolean;
 }
+
+export const PlatinumLogo: React.FC<{ size?: 'sm' | 'md' | 'lg' }> = ({ size = 'sm' }) => {
+  const sizeClasses = {
+    sm: { container: 'w-10 h-10', icon: 'w-5 h-5', text: 'text-[10px]' },
+    md: { container: 'w-14 h-14', icon: 'w-7 h-7', text: 'text-[14px]' },
+    lg: { container: 'w-24 h-24', icon: 'w-12 h-12', text: 'text-[24px]' }
+  };
+
+  const config = sizeClasses[size];
+
+  return (
+    <div className={`relative flex items-center justify-center shrink-0 ${config.container}`}>
+      {/* Outer Glow / Pulse */}
+      <div className="absolute inset-0 bg-indigo-500/20 blur-xl rounded-full animate-pulse"></div>
+      
+      {/* Hexagonal Structure */}
+      <div className="relative z-10 flex items-center justify-center w-full h-full group">
+        <Hexagon className="absolute inset-0 w-full h-full text-indigo-600 fill-indigo-600/10 drop-shadow-[0_0_8px_rgba(99,102,241,0.5)] transition-transform duration-700 group-hover:rotate-90" />
+        <Hexagon className="absolute inset-0 w-full h-full text-cyan-400 opacity-40 scale-90 rotate-45 animate-spin-slow" />
+        
+        {/* Core Glyph */}
+        <div className="relative flex items-center justify-center text-white font-black z-20">
+          <Zap className={`${config.icon} absolute opacity-20 text-white -rotate-12 blur-[1px]`} />
+          <span className={`${config.text} relative tracking-tighter`}>K</span>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export const Header: React.FC<HeaderProps> = ({ 
   activeModel, theme, onToggleTheme, language, onSetLanguage, onSearch, isSearching
@@ -39,7 +67,9 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <div className="flex items-center justify-between w-full h-full">
       <div className="flex items-center space-x-4">
-        <div className="hidden lg:flex w-8 h-8 bg-indigo-600 rounded-lg items-center justify-center text-white font-black text-sm shadow-lg">K</div>
+        <div className="hidden lg:block">
+          <PlatinumLogo size="sm" />
+        </div>
         <div className={isSearchExpanded ? 'hidden sm:block' : ''}>
            <h1 className="text-sm font-bold tracking-tight uppercase text-slate-900 dark:text-zinc-100">{activeModel}</h1>
            <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-medium">Neural State: Optimal</p>
@@ -47,7 +77,6 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
       
       <div className="flex items-center space-x-2 md:space-x-4 flex-1 justify-end">
-        {/* Expandable Search Bar */}
         <div className={`relative flex items-center transition-all duration-500 ease-out ${isSearchExpanded ? 'flex-1 max-w-md' : 'w-10'}`}>
           <form 
             onSubmit={handleSearchSubmit}

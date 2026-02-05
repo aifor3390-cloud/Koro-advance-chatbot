@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { ModelSpecs, ChatSession, Language } from '../types';
 import { UI_STRINGS } from '../constants';
-import { Plus, MessageSquare, Trash2, Zap, Brain, X, Info } from 'lucide-react';
+import { Plus, MessageSquare, Trash2, Zap, Brain, X, Info, Hexagon } from 'lucide-react';
 import { MemoryService, Synapse } from '../services/memoryService';
 
 interface SidebarProps {
@@ -100,8 +99,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className="pt-6 mt-6 border-t border-zinc-200 dark:border-zinc-900">
         <div className="bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-zinc-200 dark:border-zinc-800">
            <div className="flex items-center space-x-3 mb-4">
-              <div className="w-10 h-10 bg-indigo-600/10 rounded-xl flex items-center justify-center text-indigo-500">
-                <Zap className="w-5 h-5" />
+              <div className="w-10 h-10 bg-indigo-600/10 rounded-xl flex items-center justify-center text-indigo-500 relative">
+                <Hexagon className="w-8 h-8 absolute animate-spin-slow opacity-20" />
+                <Zap className="w-5 h-5 relative z-10" />
               </div>
               <div className="flex-1">
                  <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Core</p>
