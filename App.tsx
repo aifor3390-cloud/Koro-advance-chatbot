@@ -1,8 +1,10 @@
+
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { ChatBox } from './components/ChatBox';
 import { Header } from './components/Header';
 import { UserInput } from './components/UserInput';
+import { SettingsModal } from './components/SettingsModal';
 import { Message, KoroState, ChatSession, Language, Attachment } from './types';
 import { KORO_SPECS, INITIAL_MESSAGE, UI_STRINGS } from './constants';
 import { generateKoroStream } from './services/koroEngine';
@@ -51,6 +53,7 @@ const App: React.FC = () => {
   });
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -220,7 +223,7 @@ const App: React.FC = () => {
       <main className="flex flex-col flex-1 h-full min-w-0 bg-white dark:bg-[#0b0b0d] relative transition-colors duration-300">
         <div className="flex items-center px-4 lg:px-8 border-b border-zinc-200 dark:border-zinc-800/50 h-16 shrink-0 bg-white dark:bg-[#0b0b0d]/50 backdrop-blur-md z-10">
           <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden p-2 -mx-2 text-zinc-500 hover:text-indigo-600 rounded-lg transition-colors"><Menu className="w-6 h-6" /></button>
-          <div className="flex-1">
+          <div className="flex-1 h-full">
              <Header 
                activeModel="Koro-2 Omni Brain" 
                author={state.author} 
@@ -229,6 +232,7 @@ const App: React.FC = () => {
                language={state.language} 
                onSetLanguage={(l) => setState(p => ({...p, language: l}))}
                onSearch={(query) => handleSendMessage(query, undefined, true)}
+               onOpenSettings={() => setIsSettingsOpen(true)}
                isSearching={state.isProcessing}
              />
           </div>
@@ -258,6 +262,16 @@ const App: React.FC = () => {
           </div>
         </div>
       </main>
+
+      <SettingsModal 
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        theme={state.theme}
+        onToggleTheme={() => setState(p => ({...p, theme: p.theme === 'dark' ? 'light' : 'dark'}))}
+        language={state.language}
+        onSetLanguage={(l) => setState(p => ({...p, language: l}))}
+        specs={KORO_SPECS}
+      />
     </div>
   );
 };

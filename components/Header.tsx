@@ -1,6 +1,7 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Theme, Language } from '../types';
-import { Sun, Moon, Zap, Search, X, Loader2, Cpu, Hexagon } from 'lucide-react';
+import { Sun, Moon, Zap, Search, X, Loader2, Cpu, Hexagon, Settings } from 'lucide-react';
 
 interface HeaderProps {
   activeModel: string;
@@ -10,6 +11,7 @@ interface HeaderProps {
   language: Language;
   onSetLanguage: (lang: Language) => void;
   onSearch: (query: string) => void;
+  onOpenSettings: () => void;
   isSearching?: boolean;
 }
 
@@ -43,7 +45,7 @@ export const PlatinumLogo: React.FC<{ size?: 'sm' | 'md' | 'lg' }> = ({ size = '
 };
 
 export const Header: React.FC<HeaderProps> = ({ 
-  activeModel, theme, onToggleTheme, language, onSetLanguage, onSearch, isSearching
+  activeModel, theme, onToggleTheme, language, onSetLanguage, onSearch, onOpenSettings, isSearching
 }) => {
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -114,7 +116,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <button
                   key={lang}
                   onClick={() => onSetLanguage(lang)}
-                  className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${language === lang ? 'bg-white dark:bg-zinc-700 text-indigo-600 dark:text-zinc-100 shadow-sm' : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-400'}`}
+                  className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${language === lang ? 'bg-white dark:bg-zinc-700 text-indigo-600 dark:text-zinc-100 shadow-sm' : 'text-zinc-500 hover:text-zinc-700'}`}
                 >
                   {lang}
                 </button>
@@ -124,8 +126,17 @@ export const Header: React.FC<HeaderProps> = ({
             <button 
               onClick={onToggleTheme}
               className="p-2.5 rounded-xl bg-zinc-100 dark:bg-zinc-800/50 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
+              title="Toggle Theme"
             >
               {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
+
+            <button 
+              onClick={onOpenSettings}
+              className="p-2.5 rounded-xl bg-indigo-600 text-white hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-600/20"
+              title="Neural Configuration"
+            >
+              <Settings className="w-4 h-4" />
             </button>
 
             <div className="hidden lg:flex items-center space-x-2 px-3 py-1.5 bg-indigo-600/10 border border-indigo-500/20 rounded-xl">
