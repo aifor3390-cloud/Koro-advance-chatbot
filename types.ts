@@ -2,7 +2,6 @@
 export type Theme = 'light' | 'dark';
 export type Language = 'en' | 'es' | 'fr' | 'ur' | 'ar';
 
-// Define the User interface required by auth and profile services
 export interface User {
   id: string;
   name: string;
@@ -15,7 +14,7 @@ export interface GroundingChunk {
   web?: {
     uri: string;
     title: string;
-    snippet?: string; // Enhanced snippet support
+    snippet?: string;
   };
 }
 
@@ -28,6 +27,14 @@ export interface Attachment {
   size?: number;
 }
 
+export interface CharacterProfile {
+  name: string;
+  description: string;
+  visualPrompt: string;
+  avatarUrl?: string;
+  isGenerating?: boolean;
+}
+
 export interface Message {
   id: string;
   role: 'user' | 'assistant' | 'system';
@@ -37,6 +44,7 @@ export interface Message {
   attachments?: Attachment[];
   thoughtProcess?: string[]; 
   isThinking?: boolean;
+  characters?: CharacterProfile[];
 }
 
 export interface ChatSession {
@@ -54,6 +62,7 @@ export interface KoroState {
   author: string;
   theme: Theme;
   language: Language;
+  user: { name: string; avatar: string; email?: string };
 }
 
 export interface ModelSpecs {

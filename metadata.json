@@ -3,6 +3,7 @@
   "description": "Koro is an advanced autonomous language model by Usama, featuring real-time search grounding and high-speed reasoning synthesis.",
   "requestFramePermissions": [
     "camera",
-    "microphone"
+    "microphone",
+    "geolocation"
   ]
 }

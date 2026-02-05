@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { ModelSpecs, ChatSession, Language } from '../types';
 import { UI_STRINGS } from '../constants';
-import { Plus, MessageSquare, Trash2, Zap, Brain, X, Info, Hexagon } from 'lucide-react';
+import { Plus, MessageSquare, Trash2, Zap, Brain, X, Info, Hexagon, UserCircle, Film, Palette } from 'lucide-react';
 import { MemoryService, Synapse } from '../services/memoryService';
 
 interface SidebarProps {
@@ -11,11 +12,15 @@ interface SidebarProps {
   onSelect: (id: string) => void;
   onDelete: (id: string) => void;
   onNew: () => void;
+  onOpenProfile: () => void;
+  onOpenScriptWorkshop: () => void;
+  onOpenAvatarLab: () => void;
   language: Language;
+  user: { name: string; avatar: string };
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ 
-  specs, sessions, currentId, onSelect, onDelete, onNew, language 
+  specs, sessions, currentId, onSelect, onDelete, onNew, onOpenProfile, onOpenScriptWorkshop, onOpenAvatarLab, language, user 
 }) => {
   const t = UI_STRINGS[language];
   const [synapses, setSynapses] = useState<Synapse[]>([]);
@@ -30,17 +35,37 @@ export const Sidebar: React.FC<SidebarProps> = ({
   return (
     <aside className="flex flex-col h-full w-full bg-[#f8f9fa] dark:bg-[#08080a] border-r border-zinc-200 dark:border-zinc-900 p-4 transition-colors duration-300">
       
-      {/* New Chat Button */}
-      <button 
-        onClick={onNew}
-        className="w-full py-3.5 px-4 mb-6 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-bold text-sm flex items-center justify-center space-x-2 transition-all shadow-lg shadow-indigo-600/20 active:scale-[0.98]"
-      >
-        <Plus className="w-4 h-4" />
-        <span>{t.newChat}</span>
-      </button>
+      {/* Action Buttons */}
+      <div className="space-y-3 mb-6">
+        <button 
+          onClick={onNew}
+          className="w-full py-3.5 px-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-bold text-sm flex items-center justify-center space-x-2 transition-all shadow-lg shadow-indigo-600/20 active:scale-[0.98]"
+        >
+          <Plus className="w-4 h-4" />
+          <span>{t.newChat}</span>
+        </button>
+
+        <div className="grid grid-cols-2 gap-2">
+          <button 
+            onClick={onOpenScriptWorkshop}
+            className="py-3 px-2 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-indigo-500/50 text-slate-700 dark:text-zinc-300 rounded-2xl font-bold text-[10px] flex items-center justify-center space-x-2 transition-all active:scale-[0.98] group"
+          >
+            <Film className="w-3 h-3 text-indigo-500 group-hover:scale-110 transition-transform" />
+            <span>Scripts</span>
+          </button>
+
+          <button 
+            onClick={onOpenAvatarLab}
+            className="py-3 px-2 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-indigo-500/50 text-slate-700 dark:text-zinc-300 rounded-2xl font-bold text-[10px] flex items-center justify-center space-x-2 transition-all active:scale-[0.98] group"
+          >
+            <Palette className="w-3 h-3 text-emerald-500 group-hover:scale-110 transition-transform" />
+            <span>Avatar Lab</span>
+          </button>
+        </div>
+      </div>
 
       {/* History List */}
-      <div className="flex-1 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+      <div className="flex-1 overflow-y-auto space-y-1 pr-1 no-scrollbar">
         <h2 className="text-[10px] font-black text-zinc-400 dark:text-zinc-600 uppercase tracking-[0.3em] mb-4 px-2">Conversations</h2>
         {sessions.map(s => (
           <div 
@@ -95,9 +120,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </div>
 
-      {/* Footer / Specs */}
-      <div className="pt-6 mt-6 border-t border-zinc-200 dark:border-zinc-900">
-        <div className="bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-zinc-200 dark:border-zinc-800">
+      {/* Profile & Footer */}
+      <div className="pt-6 mt-6 border-t border-zinc-200 dark:border-zinc-900 space-y-4">
+        {/* User Card */}
+        <button 
+          onClick={onOpenProfile}
+          className="w-full group flex items-center space-x-3 p-3 bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-2xl hover:border-indigo-500/50 transition-all"
+        >
+          <div className="w-10 h-10 rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 shadow-sm transition-transform group-hover:scale-105">
+            <img src={user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=Koro`} alt="User" className="w-full h-full object-cover" />
+          </div>
+          <div className="flex-1 text-left overflow-hidden">
+            <p className="text-[10px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">Active Operator</p>
+            <p className="text-xs font-bold dark:text-zinc-100 truncate">{user.name}</p>
+          </div>
+          <UserCircle className="w-4 h-4 text-zinc-400 group-hover:text-indigo-500 transition-colors" />
+        </button>
+
+        <div className="bg-zinc-100 dark:bg-zinc-900 p-4 rounded-2xl border border-zinc-200 dark:border-zinc-800">
            <div className="flex items-center space-x-3 mb-4">
               <div className="w-10 h-10 bg-indigo-600/10 rounded-xl flex items-center justify-center text-indigo-500 relative">
                 <Hexagon className="w-8 h-8 absolute animate-spin-slow opacity-20" />
@@ -109,7 +149,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </div>
            </div>
            <p className="text-[10px] text-zinc-500 leading-relaxed font-medium">
-             Handcrafted by Usama Systems. Multimodal Brain Active.
+             Handcrafted by Usama Systems. Avatar Generator Online.
            </p>
         </div>
       </div>

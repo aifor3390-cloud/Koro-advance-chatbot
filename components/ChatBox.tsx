@@ -2,18 +2,20 @@
 import React, { useState, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Message, Theme, Attachment } from '../types';
+import { Message, Theme, Attachment, CharacterProfile } from '../types';
 import { 
   FileText, Download, ExternalLink, Maximize2, ChevronDown, ChevronUp, 
   Cpu, Globe, Info, ShieldCheck, Search, Volume2, Loader2, 
-  Music, Play, Pause, User, Users 
+  Music, Play, Pause, User, Users, Palette, Sparkles, Wand2, RotateCcw,
+  RefreshCw, Zap
 } from 'lucide-react';
 import { TTSService, VoicePersona } from '../services/ttsService';
+import { AvatarService } from '../services/avatarService';
 
 interface ChatBoxProps {
   message: Message;
   theme: Theme;
-  isNew?: boolean;
+  onUpdateMessage?: (msg: Message) => void;
 }
 
 const AttachmentPreview: React.FC<{ attachment: Attachment }> = ({ attachment }) => {
@@ -81,9 +83,10 @@ const AttachmentPreview: React.FC<{ attachment: Attachment }> = ({ attachment })
   );
 };
 
-export const ChatBox: React.FC<ChatBoxProps> = ({ message, theme }) => {
+export const ChatBox: React.FC<ChatBoxProps> = ({ message, theme, onUpdateMessage }) => {
   const [showThoughts, setShowThoughts] = useState(true);
   const [isGeneratingVoice, setIsGeneratingVoice] = useState(false);
+  const [voiceError, setVoiceError] = useState<string | null>(null);
   const [persona, setPersona] = useState<VoicePersona>('gentleman');
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -93,23 +96,46 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ message, theme }) => {
   const isSearchResult = message.content.includes("Intelligence Briefing") || message.content.startsWith("🔍");
 
   const handleGenerateVoice = async () => {
-    // If audio already exists, just toggle it
     if (audioUrl) {
       toggleAudio();
       return;
     }
 
     setIsGeneratingVoice(true);
+    setVoiceError(null);
     try {
-      const result = await TTSService.generateSpeech(message.content, persona);
+      // Use a slightly shorter slice for TTS to prevent common 500 timeout errors
+      const result = await TTSService.generateSpeech(message.content.slice(0, 1500), persona);
       setAudioUrl(result.audioUrl);
       setIsPlaying(true);
-      // Timeout to ensure audio ref is populated after state update
       setTimeout(() => audioRef.current?.play(), 100);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Voice Sync Failed", err);
+      setVoiceError(err.message || "Neural Sync Relay Timeout (500)");
     } finally {
       setIsGeneratingVoice(false);
+    }
+  };
+
+  const handleGenerateCharacterAvatar = async (charIdx: number) => {
+    if (!message.characters || !onUpdateMessage) return;
+    
+    const updatedChars = [...message.characters];
+    updatedChars[charIdx] = { ...updatedChars[charIdx], isGenerating: true };
+    onUpdateMessage({ ...message, characters: updatedChars });
+
+    try {
+      // Uses the character's unique visualPrompt for generation
+      const avatarUrl = await AvatarService.generateAvatar(
+        updatedChars[charIdx].visualPrompt, 
+        'professional'
+      );
+      updatedChars[charIdx] = { ...updatedChars[charIdx], avatarUrl, isGenerating: false };
+      onUpdateMessage({ ...message, characters: updatedChars });
+    } catch (err) {
+      console.error("Character Avatar Error", err);
+      updatedChars[charIdx] = { ...updatedChars[charIdx], isGenerating: false };
+      onUpdateMessage({ ...message, characters: updatedChars });
     }
   };
 
@@ -127,13 +153,14 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ message, theme }) => {
     if (!audioUrl) return;
     const a = document.createElement('a');
     a.href = audioUrl;
-    a.download = `Koro_${persona}_Script_${Date.now()}.wav`;
+    a.download = `Koro_${persona}_Script.wav`;
     a.click();
   };
 
   const resetVoice = () => {
     setAudioUrl(null);
     setIsPlaying(false);
+    setVoiceError(null);
   };
 
   return (
@@ -143,18 +170,19 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ message, theme }) => {
     `}>
       <div className="flex items-center space-x-3 mb-3 px-4">
         {isAssistant && (
-          <div className="w-8 h-8 bg-indigo-600 rounded-xl flex items-center justify-center text-xs font-black text-white border border-white/20 shadow-lg">
-            K
+          <div className="w-8 h-8 bg-indigo-600 rounded-xl flex items-center justify-center text-xs font-black text-white border border-white/20 shadow-lg relative">
+             <div className="absolute inset-0 bg-indigo-500/50 blur-md animate-pulse"></div>
+             <span className="relative z-10">K</span>
           </div>
         )}
         <div className="flex items-center space-x-2">
           <span className="text-[10px] font-black text-zinc-500 dark:text-zinc-500 uppercase tracking-[0.3em]">
-            {isAssistant ? 'Koro Platinum' : 'Neural Operator'}
+            {isAssistant ? 'Koro Platinum Core' : 'Neural Operator'}
           </span>
           {isAssistant && isSearchResult && (
             <span className="px-2 py-0.5 bg-indigo-500/10 border border-indigo-500/20 rounded-md text-[8px] font-black text-indigo-500 uppercase tracking-widest flex items-center space-x-1">
               <Search className="w-2.5 h-2.5" />
-              <span>Search Insight</span>
+              <span>Deep Analysis</span>
             </span>
           )}
         </div>
@@ -181,7 +209,7 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ message, theme }) => {
             >
               <Cpu className="w-4 h-4 text-indigo-500" />
               <span className="flex-1 text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400 text-left">
-                Neural Reasoning Synthesis
+                Neural Reasoning Chain
               </span>
               {showThoughts ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
             </button>
@@ -227,6 +255,119 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ message, theme }) => {
             </ReactMarkdown>
           )}
 
+          {/* Character Workshop Section - Now with advanced avatar generation & regeneration */}
+          {isAssistant && message.characters && message.characters.length > 0 && (
+            <div className="mt-10 p-6 bg-zinc-100 dark:bg-zinc-950/50 rounded-3xl border border-zinc-200 dark:border-indigo-500/20 shadow-inner">
+               <div className="flex items-center justify-between mb-6 px-1">
+                 <div className="flex items-center space-x-3">
+                   <div className="p-2.5 bg-indigo-600 text-white rounded-xl shadow-lg shadow-indigo-600/20">
+                     <Palette className="w-4 h-4" />
+                   </div>
+                   <div>
+                     <p className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.2em]">Neural Character Lab</p>
+                     <p className="text-xs font-bold dark:text-zinc-300">Script Personas Detected</p>
+                   </div>
+                 </div>
+                 <Sparkles className="w-4 h-4 text-indigo-400 animate-pulse" />
+               </div>
+
+               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                 {message.characters.map((char, idx) => (
+                   <div key={idx} className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[2rem] overflow-hidden group/char flex flex-col h-full shadow-sm hover:shadow-md transition-all duration-300">
+                     {/* Visual Persona Area */}
+                     <div className="aspect-square relative bg-zinc-50 dark:bg-zinc-800 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-center">
+                        {char.avatarUrl && !char.isGenerating ? (
+                          <div className="w-full h-full relative group/img-container">
+                            <img 
+                              src={char.avatarUrl} 
+                              alt={char.name} 
+                              className="w-full h-full object-cover transition-transform duration-700 group-hover/img-container:scale-105" 
+                            />
+                            {/* Hover Overlay for Regeneration */}
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img-container:opacity-100 transition-opacity flex items-center justify-center">
+                               <button 
+                                 onClick={() => handleGenerateCharacterAvatar(idx)}
+                                 className="p-4 bg-white/20 backdrop-blur-md text-white rounded-2xl hover:bg-indigo-600 transition-all border border-white/20 shadow-2xl group/regen"
+                                 title="Regenerate Visual Persona"
+                               >
+                                 <RefreshCw className="w-6 h-6 group-hover/regen:rotate-180 transition-transform duration-500" />
+                               </button>
+                            </div>
+                          </div>
+                        ) : char.isGenerating ? (
+                          <div className="flex flex-col items-center space-y-4">
+                             <div className="relative">
+                               <Loader2 className="w-10 h-10 text-indigo-500 animate-spin" />
+                               <Zap className="w-4 h-4 text-indigo-300 absolute inset-0 m-auto animate-pulse" />
+                             </div>
+                             <span className="text-[9px] font-black uppercase tracking-[0.2em] text-indigo-500 animate-pulse">Synthesizing...</span>
+                          </div>
+                        ) : (
+                          <button 
+                            onClick={() => handleGenerateCharacterAvatar(idx)}
+                            className="flex flex-col items-center space-y-3 opacity-40 hover:opacity-100 transition-all group/gen-btn"
+                          >
+                             <div className="w-16 h-16 bg-zinc-200 dark:bg-zinc-700 rounded-2xl flex items-center justify-center group-hover/gen-btn:scale-110 group-hover/gen-btn:bg-indigo-500/10 group-hover/gen-btn:text-indigo-500 transition-all">
+                               <User className="w-8 h-8" />
+                             </div>
+                             <span className="text-[9px] font-black uppercase tracking-[0.2em]">Generate Persona</span>
+                          </button>
+                        )}
+                        
+                        {/* Name Chip */}
+                        <div className="absolute top-4 left-4 px-3 py-1.5 bg-black/70 backdrop-blur-md rounded-xl text-[9px] font-black text-white uppercase tracking-widest border border-white/10 z-10 shadow-lg">
+                          {char.name}
+                        </div>
+                     </div>
+
+                     {/* Persona Description & Logic */}
+                     <div className="p-5 flex-1 flex flex-col">
+                        <p className="text-[11px] text-zinc-500 dark:text-zinc-400 font-medium leading-relaxed line-clamp-3 mb-5 italic">
+                          "{char.description}"
+                        </p>
+                        
+                        <div className="mt-auto space-y-2">
+                           {char.avatarUrl && !char.isGenerating ? (
+                              <div className="flex space-x-2">
+                                <button 
+                                  onClick={() => window.open(char.avatarUrl, '_blank')}
+                                  className="flex-1 py-3 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 text-[9px] font-black uppercase tracking-widest rounded-2xl transition-all border border-emerald-500/20 flex items-center justify-center space-x-2"
+                                >
+                                  <Download className="w-3.5 h-3.5" />
+                                  <span>Download</span>
+                                </button>
+                                <button 
+                                  onClick={() => handleGenerateCharacterAvatar(idx)}
+                                  className="px-4 py-3 bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:text-indigo-600 rounded-2xl transition-all border border-zinc-200 dark:border-zinc-700 flex items-center justify-center group/btn-regen"
+                                  title="Regenerate Persona"
+                                >
+                                  <RefreshCw className="w-4 h-4 group-hover/btn-regen:rotate-180 transition-transform duration-500" />
+                                </button>
+                              </div>
+                           ) : (
+                              <button 
+                                onClick={() => handleGenerateCharacterAvatar(idx)}
+                                disabled={char.isGenerating}
+                                className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-[9px] font-black uppercase tracking-widest rounded-2xl transition-all shadow-lg shadow-indigo-600/20 flex items-center justify-center space-x-2 active:scale-95"
+                              >
+                                {char.isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
+                                <span>{char.isGenerating ? 'Engaging Core...' : 'Generate Avatar'}</span>
+                              </button>
+                           )}
+                           
+                           {/* Small info tip */}
+                           <div className="flex items-center justify-center space-x-1.5 pt-1">
+                             <Info className="w-2.5 h-2.5 text-zinc-400" />
+                             <span className="text-[8px] font-bold text-zinc-400 uppercase tracking-widest">Driven by visualPrompt Logic</span>
+                           </div>
+                        </div>
+                     </div>
+                   </div>
+                 ))}
+               </div>
+            </div>
+          )}
+
           {/* Voice Generation Section */}
           {isAssistant && message.content.length > 20 && (
             <div className="mt-6 pt-6 border-t border-zinc-200 dark:border-zinc-800 space-y-4">
@@ -262,7 +403,7 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ message, theme }) => {
                     flex items-center space-x-3 px-5 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all
                     ${audioUrl 
                       ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' 
-                      : 'bg-indigo-600 text-white hover:bg-indigo-500 shadow-lg shadow-indigo-600/20'}
+                      : (voiceError ? 'bg-red-500/10 text-red-500 border border-red-500/20' : 'bg-indigo-600 text-white hover:bg-indigo-500 shadow-lg shadow-indigo-600/20')}
                     disabled:opacity-50
                   `}
                 >
@@ -273,7 +414,7 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ message, theme }) => {
                   ) : (
                     <Volume2 className="w-4 h-4" />
                   )}
-                  <span>{isGeneratingVoice ? 'Synthesizing...' : audioUrl ? (isPlaying ? 'Pause Audio' : 'Resume Audio') : `Synthesize ${persona}`}</span>
+                  <span>{isGeneratingVoice ? 'Synthesizing...' : voiceError ? 'Retry Neural Sync' : audioUrl ? (isPlaying ? 'Pause Audio' : 'Resume Audio') : `Synthesize ${persona}`}</span>
                 </button>
 
                 {audioUrl && (
@@ -283,18 +424,25 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ message, theme }) => {
                       className="p-3 text-zinc-400 hover:text-indigo-500 transition-colors"
                       title="Change Voice"
                     >
-                      <ChevronDown className="w-4 h-4" />
+                      <RotateCcw className="w-4 h-4" />
                     </button>
                     <button 
                       onClick={downloadAudio}
-                      className="p-3 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 rounded-xl transition-all border border-zinc-200 dark:border-zinc-700 flex items-center space-x-2"
+                      className="p-3 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 rounded-xl transition-all border border-zinc-200 dark:border-zinc-700 flex items-center justify-center space-x-2"
                     >
                       <Download className="w-4 h-4" />
-                      <span className="text-[10px] font-black uppercase tracking-widest">Download WAV</span>
+                      <span className="text-[10px] font-black uppercase tracking-widest">WAV</span>
                     </button>
                   </div>
                 )}
               </div>
+
+              {voiceError && (
+                <div className="flex items-center space-x-2 text-[9px] text-red-500 font-bold uppercase tracking-widest animate-pulse">
+                  <Info className="w-3 h-3" />
+                  <span>{voiceError}</span>
+                </div>
+              )}
 
               {audioUrl && (
                 <div className="bg-zinc-50 dark:bg-zinc-800/50 p-4 rounded-2xl border border-zinc-200 dark:border-zinc-700/50 flex items-center space-x-4 animate-in fade-in slide-in-from-top-2">
@@ -323,7 +471,7 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ message, theme }) => {
               <div className="flex items-center justify-between">
                 <p className="text-[10px] font-black text-cyan-500 dark:text-cyan-400 uppercase tracking-[0.2em] flex items-center space-x-2">
                   <ShieldCheck className="w-3.5 h-3.5" />
-                  <span>Verified Neural Grounding</span>
+                  <span>Verified Knowledge Base</span>
                 </p>
                 <Globe className="w-3.5 h-3.5 text-zinc-400 animate-spin-slow" />
               </div>
