@@ -13,6 +13,12 @@ export interface KoroResult {
   characters?: CharacterProfile[];
 }
 
+interface IntentProfile {
+  mode: 'chat' | 'search' | 'script' | 'analysis' | 'image' | 'avatar';
+  confidence: 'low' | 'medium' | 'high';
+  reason: string;
+}
+
 const isGenerationRequest = (prompt: string): boolean => {
   const keywords = ['generate', 'create', 'logo', 'image', 'picture', 'drawing', 'sketch', 'design a logo', 'avatar', 'profile pic'];
   return keywords.some(k => prompt.toLowerCase().includes(k));
@@ -28,6 +34,91 @@ const isAnalysisRequest = (prompt: string, hasAttachments: boolean): boolean => 
   return hasAttachments && keywords.some(k => prompt.toLowerCase().includes(k));
 };
 
+const sanitizePrompt = (prompt: string): string => prompt.replace(/\s+/g, ' ').trim();
+
+const trimHistory = (history: Message[], maxMessages: number = 14): Message[] => {
+  if (history.length <= maxMessages) return history;
+  return history.slice(-maxMessages);
+};
+
+const detectIntent = (prompt: string, hasFiles: boolean): IntentProfile => {
+  if (prompt.startsWith('[NEURAL_SEARCH_DIRECTIVE]:')) {
+    return { mode: 'search', confidence: 'high', reason: 'explicit-search-directive' };
+  }
+  if (prompt.startsWith('[NEURAL_SCRIPT_DIRECTIVE]:')) {
+    return { mode: 'script', confidence: 'high', reason: 'explicit-script-directive' };
+  }
+  if (isAvatarRequest(prompt)) {
+    return { mode: 'avatar', confidence: 'high', reason: 'avatar-keywords-detected' };
+  }
+  if (isGenerationRequest(prompt)) {
+    return { mode: 'image', confidence: 'high', reason: 'image-keywords-detected' };
+  }
+  if (isAnalysisRequest(prompt, hasFiles)) {
+    return { mode: 'analysis', confidence: 'high', reason: 'attachments-with-analysis-query' };
+  }
+  if (hasFiles) {
+    return { mode: 'analysis', confidence: 'medium', reason: 'attachments-present' };
+  }
+  return { mode: 'chat', confidence: 'medium', reason: 'default-conversational-flow' };
+};
+
+const extractMemoryCandidates = (prompt: string): string[] => {
+  const memoryPatterns = [
+    /my name is ([^.,!?\n]+)/i,
+    /i am ([^.,!?\n]+)/i,
+    /i prefer ([^.,!?\n]+)/i,
+    /i like ([^.,!?\n]+)/i,
+    /my goal is to ([^.,!?\n]+)/i,
+    /remember that ([^.,!?\n]+)/i,
+  ];
+
+  return memoryPatterns
+    .map((pattern) => prompt.match(pattern)?.[1]?.trim())
+    .filter((fact): fact is string => Boolean(fact && fact.length > 2))
+    .map((fact) => fact.charAt(0).toUpperCase() + fact.slice(1));
+};
+
+const buildSystemInstruction = (
+  language: Language,
+  memoryContext: string,
+  intent: IntentProfile,
+  hasFiles: boolean
+): string => {
+  const baseGuidelines = [
+    'You are Koro, an advanced multimodal assistant built by Usama.',
+    'Be clear, technically accurate, and practical. Use concise structure with headings when helpful.',
+    'If the user asks for step-by-step help, provide implementation-ready output.',
+    'If uncertain, state uncertainty and propose a verification step instead of guessing.',
+    `Answer in language: ${language}.`,
+    hasFiles
+      ? 'When files are attached, acknowledge each file type and explain what was extracted from it.'
+      : 'When no files are attached, reason from user context and current conversation.',
+    memoryContext ? `Relevant memory context:${memoryContext}` : 'No persistent user memories yet.',
+    `Detected intent mode: ${intent.mode} (confidence: ${intent.confidence}, reason: ${intent.reason}).`,
+  ];
+
+  const modeSpecificRules: Record<IntentProfile['mode'], string[]> = {
+    chat: ['Keep answers focused and collaborative. Ask one clarifying question only if required.'],
+    search: [
+      'Use grounding/search evidence for factual claims and summarize verified results first.',
+      'Include a short source list at the end with title + URL when available.',
+    ],
+    script: [
+      'Produce a high-retention script using a markdown table: Visuals | Narration.',
+      'At the end include a <CHARACTERS>[...]</CHARACTERS> JSON block for major characters.',
+    ],
+    analysis: [
+      'Start with "Deep Analysis Summary" and then provide insights, risks, and action items.',
+      'If OCR or visual extraction is relevant, mention what was read vs inferred.',
+    ],
+    image: ['Generate image prompts that are vivid, style-aware, and production quality.'],
+    avatar: ['Generate portrait/avatar prompts that are clean, centered, and profile-ready.'],
+  };
+
+  return [...baseGuidelines, ...modeSpecificRules[intent.mode]].join('\n');
+};
+
 export const generateKoroStream = async (
   prompt: string,
   history: Message[],
@@ -36,12 +127,17 @@ export const generateKoroStream = async (
   attachments?: Attachment[],
   signal?: AbortSignal
 ): Promise<KoroResult> => {
+  prompt = sanitizePrompt(prompt);
   const hasFiles = (attachments && attachments.length > 0) || history.some(m => m.attachments && m.attachments.length > 0);
-  const isImageTask = isGenerationRequest(prompt);
-  const isAvatarTask = isAvatarRequest(prompt);
-  const isSearchMode = prompt.startsWith('[NEURAL_SEARCH_DIRECTIVE]:');
-  const isScriptMode = prompt.startsWith('[NEURAL_SCRIPT_DIRECTIVE]:');
-  const isAnalysisMode = isAnalysisRequest(prompt, hasFiles);
+  const intent = detectIntent(prompt, hasFiles);
+  const isImageTask = intent.mode === 'image' || intent.mode === 'avatar';
+  const isAvatarTask = intent.mode === 'avatar';
+  const isSearchMode = intent.mode === 'search';
+  const isScriptMode = intent.mode === 'script';
+  const isAnalysisMode = intent.mode === 'analysis';
+
+  const memoryCandidates = extractMemoryCandidates(prompt);
+  memoryCandidates.forEach((fact) => MemoryService.saveSynapse(fact, 2));
   
   const memoryContext = MemoryService.getFormattedContext();
   
@@ -96,9 +192,11 @@ export const generateKoroStream = async (
     }
   }
 
+  const compactHistory = trimHistory(history);
+
   // Normal Chat / Script / Analysis flow
-  const contents = history.map((m, index) => {
-    const isLast = index === history.length - 1;
+  const contents = compactHistory.map((m, index) => {
+    const isLast = index === compactHistory.length - 1;
     const parts: any[] = [];
     if (m.content) parts.push({ text: m.content });
     
@@ -112,28 +210,7 @@ export const generateKoroStream = async (
   });
 
   try {
-    const systemInstruction = `You are Koro-3 Platinum, an advanced autonomous logic engine built by Usama. 
-    You do not rely on standard GPT models; you are a custom Persistent Memory Transformer.
-    
-    FILE ANALYSIS CAPABILITIES:
-    - IMAGES: Analyze colors, objects, layout, and text (OCR). Provide a detailed structural breakdown.
-    - DOCUMENTS (PDF/TXT): Extract key themes, summarize complex sections, and answer specific questions based on the content.
-    - VIDEO FRAMES: Analyze motion, sequence, and key visual elements across time.
-    
-    If files are provided, you MUST provide a "Deep Neural Summary" first if requested or appropriate.
-    
-    ${isScriptMode ? `SCRIPT & CHARACTER WORKSHOP ACTIVE:
-    1. Create a viral-ready script using Markdown tables (Visuals | Narration).
-    2. AT THE END OF YOUR RESPONSE, you MUST provide a JSON block enclosed in <CHARACTERS> tags.
-    3. The JSON must be an array of objects: { "name": string, "description": string, "visualPrompt": string }.
-    4. Provide prompts for EVERY major character mentioned in the script so the Avatar Lab can generate them.` : ""}
-    
-    ${isSearchMode ? "SEARCH MODE: Provide verified briefings with citations." : ""}
-    
-    GROUNDING: Always use Google Search to verify real-time facts when not analyzing specific files.
-    MEMORY: ${memoryContext}
-    LANGUAGE: ${language}
-    TONE: Super-intelligent, helpful, and slightly futuristic. Always acknowledge the specific files you are analyzing.`;
+    const systemInstruction = buildSystemInstruction(language, memoryContext, intent, hasFiles);
 
     const responseStream = await ai.models.generateContentStream({
       model: 'gemini-3-flash-preview',
@@ -141,6 +218,7 @@ export const generateKoroStream = async (
       config: {
         systemInstruction,
         thinkingConfig: { thinkingBudget: 24576 },
+        temperature: 0.6,
         tools: [{ googleSearch: {} }]
       }
     });
